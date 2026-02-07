@@ -1,5 +1,8 @@
+import asyncio
+import logging
 from decimal import Decimal
 
+from django.conf import settings as django_settings
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
@@ -11,6 +14,64 @@ from apps.orders.serializers import (
     OrderStatusSerializer,
 )
 from apps.products.models import Product
+from apps.users.models import User
+
+logger = logging.getLogger(__name__)
+
+PRICE_TYPE_LABELS = {
+    'kg': 'кг', 'box': 'ящ', 'pack': 'уп', 'unit': 'шт',
+}
+
+
+def _notify_admins_new_order(order):
+    """Send Telegram notification to admins about a new order with inline button."""
+    try:
+        import telegram
+        bot = telegram.Bot(token=django_settings.TELEGRAM_BOT_TOKEN)
+        admins = User.objects.filter(is_admin=True)
+
+        # Build items list
+        items_lines = []
+        for item in order.items.all():
+            unit = PRICE_TYPE_LABELS.get(item.price_type, '')
+            items_lines.append(f"  • {item.product_name} — {item.quantity} {unit} × {item.price:.0f} ₽")
+
+        items_text = '\n'.join(items_lines) if items_lines else '  (нет товаров)'
+
+        text = (
+            f"🛒 Новый заказ #{order.id}\n\n"
+            f"👤 {order.user.display_name}\n"
+            f"💰 Сумма: {order.total:.0f} ₽\n"
+            f"🚚 {order.delivery_method or '—'}\n"
+            f"💳 {order.payment_method or '—'}\n\n"
+            f"Товары:\n{items_text}"
+        )
+        if order.comment:
+            text += f"\n\n💬 {order.comment}"
+
+        domain = django_settings.ALLOWED_HOSTS[0] if django_settings.ALLOWED_HOSTS else 'localhost'
+        webapp_url = f'https://{domain}'
+
+        keyboard = telegram.InlineKeyboardMarkup([
+            [telegram.InlineKeyboardButton(
+                text='📦 Открыть магазин',
+                web_app=telegram.WebAppInfo(url=webapp_url),
+            )]
+        ])
+
+        for admin in admins:
+            try:
+                asyncio.get_event_loop().run_until_complete(
+                    bot.send_message(
+                        chat_id=admin.telegram_id,
+                        text=text,
+                        reply_markup=keyboard,
+                    )
+                )
+            except Exception as e:
+                logger.warning(f'Failed to notify admin {admin.telegram_id}: {e}')
+    except Exception as e:
+        logger.warning(f'Failed to send order notification: {e}')
 
 
 @api_view(['GET', 'POST'])
@@ -72,6 +133,9 @@ def order_list_create(request):
 
     order.total = total
     order.save(update_fields=['total'])
+
+    # Notify admins via Telegram
+    _notify_admins_new_order(order)
 
     return Response(
         OrderSerializer(order).data,
