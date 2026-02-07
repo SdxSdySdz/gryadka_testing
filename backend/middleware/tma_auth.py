@@ -23,6 +23,9 @@ class TMAAuthorizationMiddleware:
     # Paths that don't require authentication
     EXEMPT_PATHS = [
         '/api/bot/webhook/',
+        '/api/settings/public/',
+        '/api/products/',
+        '/api/categories/',
     ]
 
     # Init data is valid for 24 hours
