@@ -130,3 +130,25 @@ TELEGRAM_SECRET_KEY = hmac.new(
 
 # Custom user model
 AUTH_USER_MODEL = 'users.User'
+
+# Logging - show errors in console
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+        },
+        'django.request': {
+            'handlers': ['console'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}
