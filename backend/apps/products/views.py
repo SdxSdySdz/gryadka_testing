@@ -78,7 +78,7 @@ def admin_category_list_create(request):
 
     serializer = CategorySerializer(data=request.data, context={'request': request})
     serializer.is_valid(raise_exception=True)
-    serializer.save()
+    serializer.save(is_active=True)
     return Response(serializer.data, status=201)
 
 

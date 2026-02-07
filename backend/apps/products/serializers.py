@@ -3,6 +3,8 @@ from apps.products.models import Category, Product, ProductImage
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    is_active = serializers.BooleanField(default=True, required=False)
+
     class Meta:
         model = Category
         fields = ['id', 'name', 'image', 'sort_order', 'is_active']
