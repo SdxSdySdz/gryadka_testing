@@ -3,6 +3,9 @@ import type { ChatMessage, ChatRoom } from '../types'
 
 export const chatApi = {
   // Client
+  openChat: () =>
+    http.post('/chat/open/').then((r) => r.data),
+
   getMessages: (after?: string) =>
     http.get<ChatMessage[]>('/chat/messages/', { params: after ? { after } : {} }).then((r) => r.data),
 

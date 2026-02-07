@@ -41,6 +41,8 @@ export default function ChatPage() {
   }
 
   useEffect(() => {
+    // Notify admins that client opened the chat
+    chatApi.openChat().catch(console.error)
     loadMessages()
     pollingRef.current = setInterval(pollMessages, 3000)
     return () => {
