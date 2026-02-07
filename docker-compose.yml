@@ -39,6 +39,28 @@ services:
       - redis
     restart: always
 
+  bot:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    command: ["python", "manage.py", "runbot"]
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost}
+      POSTGRES_DB: ${POSTGRES_DB:-gryadka}
+      POSTGRES_USER: ${POSTGRES_USER:-gryadka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gryadka_secret}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ADMIN_IDS: ${TELEGRAM_ADMIN_IDS}
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
   nginx:
     build:
       context: .
@@ -49,8 +71,9 @@ services:
     volumes:
       - media_data:/app/media
       - static_data:/app/staticfiles
-      - ./docker/nginx/certbot/conf:/etc/letsencrypt
-      - ./docker/nginx/certbot/www:/var/www/certbot
+      - ./frontend/dist:/usr/share/nginx/html:ro
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     depends_on:
       - django
     restart: always
