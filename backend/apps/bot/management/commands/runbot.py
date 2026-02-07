@@ -1,4 +1,5 @@
 import asyncio
+from asgiref.sync import sync_to_async
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, WebAppInfo
@@ -8,7 +9,7 @@ from apps.users.services import UserService
 
 
 class Command(BaseCommand):
-    help = 'Run Telegram bot in polling mode (for local development)'
+    help = 'Run Telegram bot in polling mode'
 
     def handle(self, *args, **options):
         self.stdout.write('Starting bot in polling mode...')
@@ -27,11 +28,10 @@ class Command(BaseCommand):
         if not tg_user:
             return
 
-        # Auto-create user
-        user, created = UserService.update_or_create_from_bot(tg_user)
+        # Wrap sync Django ORM call in sync_to_async
+        user, created = await sync_to_async(UserService.update_or_create_from_bot)(tg_user)
 
         domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost'
-        # For local dev, use ngrok/localtunnel URL if available
         webapp_url = f'https://{domain}'
 
         keyboard = InlineKeyboardMarkup([
@@ -55,8 +55,8 @@ class Command(BaseCommand):
         if not tg_user:
             return
 
-        # Auto-create user
-        UserService.update_or_create_from_bot(tg_user)
+        # Wrap sync Django ORM call in sync_to_async
+        await sync_to_async(UserService.update_or_create_from_bot)(tg_user)
 
         await update.message.reply_text(
             'Используйте кнопку ниже или команду /start, чтобы открыть магазин.'
