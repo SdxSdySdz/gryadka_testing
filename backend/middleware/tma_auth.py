@@ -20,16 +20,9 @@ class TMAAuthorizationMiddleware:
     6. Check auth_date freshness
     """
 
-    # Paths that don't require authentication
+    # Paths that never require authentication
     EXEMPT_PATHS = [
         '/api/bot/webhook/',
-        '/api/products/',
-        '/api/categories/',
-    ]
-
-    # Exact paths exempt from auth
-    EXEMPT_EXACT_PATHS = [
-        '/api/settings/',
     ]
 
     # Init data is valid for 24 hours
@@ -38,13 +31,42 @@ class TMAAuthorizationMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-    def __call__(self, request: HttpRequest) -> HttpResponse:
-        # Skip exempt paths (prefix match)
-        if any(request.path.startswith(p) for p in self.EXEMPT_PATHS):
-            return self.get_response(request)
+    def _is_exempt(self, path: str) -> bool:
+        """Check if path is exempt from auth.
 
-        # Skip exact path matches (e.g. public settings)
-        if request.path in self.EXEMPT_EXACT_PATHS:
+        Admin paths (/admin/) always require authentication.
+        Public API endpoints (products, categories, settings) are exempt.
+        """
+        # Admin paths ALWAYS require auth
+        if '/admin' in path:
+            return False
+
+        # Webhook - exempt
+        for p in self.EXEMPT_PATHS:
+            if path.startswith(p):
+                return True
+
+        # Public read-only endpoints - exempt
+        PUBLIC_PREFIXES = [
+            '/api/products/',
+            '/api/categories/',
+        ]
+        for p in PUBLIC_PREFIXES:
+            if path.startswith(p):
+                return True
+
+        # Exact public paths
+        PUBLIC_EXACT = [
+            '/api/settings/',
+        ]
+        if path in PUBLIC_EXACT:
+            return True
+
+        return False
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        # Check if path is exempt
+        if self._is_exempt(request.path):
             return self.get_response(request)
 
         # Skip if already authenticated (e.g., by DevAuthMiddleware)

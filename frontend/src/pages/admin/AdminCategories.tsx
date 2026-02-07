@@ -45,7 +45,11 @@ export default function AdminCategories() {
       }
       resetForm()
       loadData()
-    } catch (e) { console.error(e) }
+    } catch (e: any) {
+      console.error(e)
+      const msg = e?.response?.data?.error || e?.response?.data?.detail || e?.message || 'Ошибка'
+      alert(`Ошибка: ${msg}`)
+    }
   }
 
   const handleDelete = async (id: number) => {
