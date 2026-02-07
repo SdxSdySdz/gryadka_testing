@@ -87,10 +87,10 @@ class Product(models.Model):
 
     @property
     def main_price(self):
-        """Return the first available price by priority: kg > 100g > pack > box > unit."""
+        """Return the first available price by priority: kg > 100g > unit > pack > box."""
         for price in [self.price_per_kg, self.price_per_100g,
-                      self.price_per_pack, self.price_per_box,
-                      self.price_per_unit]:
+                      self.price_per_unit, self.price_per_pack,
+                      self.price_per_box]:
             if price is not None:
                 return price
         return 0

@@ -18,6 +18,9 @@ function getCardPriceLabel(product: Product): { price: string; unit: string } {
   if (product.price_per_100g) {
     return { price: product.price_per_100g, unit: 'р/100г' }
   }
+  if (product.price_per_unit) {
+    return { price: product.price_per_unit, unit: 'р/шт' }
+  }
   if (product.price_per_pack) {
     const w = product.pack_weight ? ` (${formatWeight(product.pack_weight)})` : ''
     return { price: product.price_per_pack, unit: `р/уп${w}` }
@@ -25,9 +28,6 @@ function getCardPriceLabel(product: Product): { price: string; unit: string } {
   if (product.price_per_box) {
     const w = product.box_weight ? ` (${formatWeight(product.box_weight)})` : ''
     return { price: product.price_per_box, unit: `р/ящ${w}` }
-  }
-  if (product.price_per_unit) {
-    return { price: product.price_per_unit, unit: 'р/шт' }
   }
   return { price: '0', unit: '' }
 }

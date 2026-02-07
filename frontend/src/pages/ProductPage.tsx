@@ -26,6 +26,9 @@ function buildPriceOptions(product: Product) {
   if (product.price_per_100g) {
     opts.push({ type: 'gram', label: 'за 100г', value: product.price_per_100g })
   }
+  if (product.price_per_unit) {
+    opts.push({ type: 'unit', label: 'за шт', value: product.price_per_unit })
+  }
   if (product.price_per_pack) {
     const w = product.pack_weight ? ` (${formatWeight(product.pack_weight)})` : ''
     opts.push({ type: 'pack', label: `за уп${w}`, value: product.price_per_pack })
@@ -33,9 +36,6 @@ function buildPriceOptions(product: Product) {
   if (product.price_per_box) {
     const w = product.box_weight ? ` (${formatWeight(product.box_weight)})` : ''
     opts.push({ type: 'box', label: `за ящ${w}`, value: product.price_per_box })
-  }
-  if (product.price_per_unit) {
-    opts.push({ type: 'unit', label: 'за шт', value: product.price_per_unit })
   }
   return opts
 }
