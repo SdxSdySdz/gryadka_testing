@@ -23,9 +23,13 @@ class TMAAuthorizationMiddleware:
     # Paths that don't require authentication
     EXEMPT_PATHS = [
         '/api/bot/webhook/',
-        '/api/settings/public/',
         '/api/products/',
         '/api/categories/',
+    ]
+
+    # Exact paths exempt from auth
+    EXEMPT_EXACT_PATHS = [
+        '/api/settings/',
     ]
 
     # Init data is valid for 24 hours
@@ -35,8 +39,12 @@ class TMAAuthorizationMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        # Skip exempt paths
+        # Skip exempt paths (prefix match)
         if any(request.path.startswith(p) for p in self.EXEMPT_PATHS):
+            return self.get_response(request)
+
+        # Skip exact path matches (e.g. public settings)
+        if request.path in self.EXEMPT_EXACT_PATHS:
             return self.get_response(request)
 
         # Skip if already authenticated (e.g., by DevAuthMiddleware)
