@@ -44,6 +44,26 @@ class Product(models.Model):
     price_per_unit = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
     )
+    price_per_100g = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='Цена за 100 грамм',
+    )
+
+    # Weight info for boxes and packs (in grams)
+    box_weight = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Вес коробки в граммах',
+    )
+    pack_weight = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text='Вес упаковки в граммах',
+    )
+
+    # Available gram portions (comma-separated, e.g. "250,300,500")
+    available_grams = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text='Доступные граммовки через запятую (напр. 250,300,500)',
+    )
 
     # Old price for sales display
     old_price = models.DecimalField(
@@ -67,9 +87,10 @@ class Product(models.Model):
 
     @property
     def main_price(self):
-        """Return the first available price."""
-        for price in [self.price_per_kg, self.price_per_unit,
-                      self.price_per_pack, self.price_per_box]:
+        """Return the first available price by priority: kg > 100g > pack > box > unit."""
+        for price in [self.price_per_kg, self.price_per_100g,
+                      self.price_per_pack, self.price_per_box,
+                      self.price_per_unit]:
             if price is not None:
                 return price
         return 0

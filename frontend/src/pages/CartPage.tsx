@@ -2,11 +2,15 @@ import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '../store/cartStore'
 import { useAppBackButton } from '../hooks/useAppBackButton'
-import { PRICE_TYPE_LABELS } from '../types'
-import type { PriceType } from '../types'
+import { PRICE_TYPE_LABELS, formatWeight } from '../types'
+import type { CartItem, PriceType } from '../types'
 
-function getItemPrice(item: { product: any; priceType: PriceType }): number {
-  const map: Record<PriceType, string | null> = {
+function getItemPrice(item: CartItem): number {
+  if (item.priceType === 'gram' && item.product.price_per_100g) {
+    const per100 = parseFloat(item.product.price_per_100g)
+    return item.selectedGrams ? per100 * item.selectedGrams / 100 : per100
+  }
+  const map: Record<string, string | null> = {
     kg: item.product.price_per_kg,
     box: item.product.price_per_box,
     pack: item.product.price_per_pack,
@@ -14,6 +18,13 @@ function getItemPrice(item: { product: any; priceType: PriceType }): number {
   }
   const val = map[item.priceType]
   return val ? parseFloat(val) : 0
+}
+
+function getItemLabel(item: CartItem): string {
+  if (item.priceType === 'gram' && item.selectedGrams) {
+    return formatWeight(item.selectedGrams)
+  }
+  return PRICE_TYPE_LABELS[item.priceType]
 }
 
 export default function CartPage() {
@@ -60,9 +71,11 @@ export default function CartPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
         {items.map((item) => {
           const price = getItemPrice(item)
+          const label = getItemLabel(item)
+          const itemKey = `${item.product.id}-${item.priceType}-${item.selectedGrams || ''}`
           return (
             <div
-              key={`${item.product.id}-${item.priceType}`}
+              key={itemKey}
               style={{
                 background: 'var(--white)',
                 borderRadius: 12,
@@ -87,16 +100,21 @@ export default function CartPage() {
 
               {/* Info */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>{item.product.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 500, marginBottom: 4 }}>
+                  {item.product.name}
+                  {item.priceType === 'gram' && item.selectedGrams
+                    ? ` — ${formatWeight(item.selectedGrams)}`
+                    : ''}
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  {price.toFixed(0)} ₽ {PRICE_TYPE_LABELS[item.priceType]}
+                  {price.toFixed(0)} ₽ {label}
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   {/* Quantity controls */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity - 1)}
+                      onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.priceType, item.selectedGrams)}
                       style={{
                         width: 30, height: 30, borderRadius: 8,
                         background: 'var(--bg)', fontSize: 16,
@@ -109,7 +127,7 @@ export default function CartPage() {
                       {item.quantity}
                     </span>
                     <button
-                      onClick={() => updateQuantity(item.product.id, item.quantity + 1)}
+                      onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.priceType, item.selectedGrams)}
                       style={{
                         width: 30, height: 30, borderRadius: 8,
                         background: 'var(--green-bg)', fontSize: 16,
@@ -130,7 +148,7 @@ export default function CartPage() {
 
               {/* Remove */}
               <button
-                onClick={() => removeItem(item.product.id)}
+                onClick={() => removeItem(item.product.id, item.priceType, item.selectedGrams)}
                 style={{ background: 'none', alignSelf: 'flex-start', padding: 4 }}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" strokeWidth="2">

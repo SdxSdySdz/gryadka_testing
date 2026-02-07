@@ -39,6 +39,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     PRICE_TYPE_CHOICES = [
         ('kg', 'за кг'),
+        ('gram', 'за граммовку'),
         ('box', 'за ящик'),
         ('pack', 'за упаковку'),
         ('unit', 'за штуку'),

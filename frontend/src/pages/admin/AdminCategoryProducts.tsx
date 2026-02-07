@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useAppBackButton } from '../../hooks/useAppBackButton'
 import { productsApi, categoriesApi } from '../../api/products'
 import type { Product, Category } from '../../types'
-import { TAG_LABELS } from '../../types'
+import { TAG_LABELS, formatWeight } from '../../types'
 
 export default function AdminCategoryProducts() {
   const navigate = useNavigate()
@@ -18,6 +18,8 @@ export default function AdminCategoryProducts() {
   const [form, setForm] = useState({
     name: '', description: '',
     price_per_kg: '', price_per_unit: '', price_per_pack: '', price_per_box: '',
+    price_per_100g: '', available_grams: '',
+    box_weight: '', pack_weight: '',
     old_price: '', tag: '', in_stock: true,
   })
   const [images, setImages] = useState<File[]>([])
@@ -43,7 +45,13 @@ export default function AdminCategoryProducts() {
   }
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price_per_kg: '', price_per_unit: '', price_per_pack: '', price_per_box: '', old_price: '', tag: '', in_stock: true })
+    setForm({
+      name: '', description: '',
+      price_per_kg: '', price_per_unit: '', price_per_pack: '', price_per_box: '',
+      price_per_100g: '', available_grams: '',
+      box_weight: '', pack_weight: '',
+      old_price: '', tag: '', in_stock: true,
+    })
     setImages([])
     setEditId(null)
     setShowForm(false)
@@ -57,6 +65,10 @@ export default function AdminCategoryProducts() {
       price_per_unit: p.price_per_unit || '',
       price_per_pack: p.price_per_pack || '',
       price_per_box: p.price_per_box || '',
+      price_per_100g: p.price_per_100g || '',
+      available_grams: p.available_grams || '',
+      box_weight: p.box_weight != null ? String(p.box_weight) : '',
+      pack_weight: p.pack_weight != null ? String(p.pack_weight) : '',
       old_price: p.old_price || '',
       tag: p.tag,
       in_stock: p.in_stock,
@@ -74,6 +86,10 @@ export default function AdminCategoryProducts() {
     if (form.price_per_unit) fd.append('price_per_unit', form.price_per_unit)
     if (form.price_per_pack) fd.append('price_per_pack', form.price_per_pack)
     if (form.price_per_box) fd.append('price_per_box', form.price_per_box)
+    if (form.price_per_100g) fd.append('price_per_100g', form.price_per_100g)
+    fd.append('available_grams', form.available_grams)
+    if (form.box_weight) fd.append('box_weight', form.box_weight)
+    if (form.pack_weight) fd.append('pack_weight', form.pack_weight)
     if (form.old_price) fd.append('old_price', form.old_price)
     fd.append('tag', form.tag)
     fd.append('in_stock', String(form.in_stock))
@@ -105,6 +121,23 @@ export default function AdminCategoryProducts() {
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
     border: '1px solid #e0e0e0', fontSize: 14, boxSizing: 'border-box',
+  }
+
+  /** Build a summary of prices for the product list */
+  function priceSummary(p: Product): string {
+    const parts: string[] = []
+    if (p.price_per_kg) parts.push(`${parseFloat(p.price_per_kg).toFixed(0)} ₽/кг`)
+    if (p.price_per_100g) parts.push(`${parseFloat(p.price_per_100g).toFixed(0)} ₽/100г`)
+    if (p.price_per_pack) {
+      const w = p.pack_weight ? ` (${formatWeight(p.pack_weight)})` : ''
+      parts.push(`${parseFloat(p.price_per_pack).toFixed(0)} ₽/уп${w}`)
+    }
+    if (p.price_per_box) {
+      const w = p.box_weight ? ` (${formatWeight(p.box_weight)})` : ''
+      parts.push(`${parseFloat(p.price_per_box).toFixed(0)} ₽/ящ${w}`)
+    }
+    if (p.price_per_unit) parts.push(`${parseFloat(p.price_per_unit).toFixed(0)} ₽/шт`)
+    return parts.join(' · ') || 'Нет цены'
   }
 
   return (
@@ -148,6 +181,18 @@ export default function AdminCategoryProducts() {
               <input style={inputStyle} placeholder="Цена за шт" type="number" step="0.01" value={form.price_per_unit} onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })} />
               <input style={inputStyle} placeholder="Цена за уп" type="number" step="0.01" value={form.price_per_pack} onChange={(e) => setForm({ ...form, price_per_pack: e.target.value })} />
               <input style={inputStyle} placeholder="Цена за ящик" type="number" step="0.01" value={form.price_per_box} onChange={(e) => setForm({ ...form, price_per_box: e.target.value })} />
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Граммовки</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <input style={inputStyle} placeholder="Цена за 100г" type="number" step="0.01" value={form.price_per_100g} onChange={(e) => setForm({ ...form, price_per_100g: e.target.value })} />
+              <input style={inputStyle} placeholder="Граммовки (250,300,500)" value={form.available_grams} onChange={(e) => setForm({ ...form, available_grams: e.target.value })} />
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Масса упаковки / коробки (в граммах)</div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <input style={inputStyle} placeholder="Масса упаковки (г)" type="number" value={form.pack_weight} onChange={(e) => setForm({ ...form, pack_weight: e.target.value })} />
+              <input style={inputStyle} placeholder="Масса коробки (г)" type="number" value={form.box_weight} onChange={(e) => setForm({ ...form, box_weight: e.target.value })} />
             </div>
 
             <input style={inputStyle} placeholder="Старая цена (для акций)" type="number" step="0.01" value={form.old_price} onChange={(e) => setForm({ ...form, old_price: e.target.value })} />
@@ -229,10 +274,7 @@ export default function AdminCategoryProducts() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{p.name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  {p.price_per_kg && `${p.price_per_kg} ₽/кг`}
-                  {p.price_per_unit && `${p.price_per_unit} ₽/шт`}
-                  {p.price_per_pack && `${p.price_per_pack} ₽/уп`}
-                  {p.price_per_box && `${p.price_per_box} ₽/ящ`}
+                  {priceSummary(p)}
                   {p.tag && ` · ${TAG_LABELS[p.tag]}`}
                   {!p.in_stock && ' · Нет в наличии'}
                 </div>

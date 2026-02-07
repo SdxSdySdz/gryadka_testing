@@ -34,6 +34,10 @@ export interface Product {
   price_per_box: string | null
   price_per_pack: string | null
   price_per_unit: string | null
+  price_per_100g: string | null
+  available_grams: string
+  box_weight: number | null
+  pack_weight: number | null
   old_price: string | null
   tag: '' | 'hit' | 'sale' | 'recommended'
   in_stock: boolean
@@ -42,12 +46,13 @@ export interface Product {
   created_at?: string
 }
 
-export type PriceType = 'kg' | 'box' | 'pack' | 'unit'
+export type PriceType = 'kg' | 'gram' | 'pack' | 'box' | 'unit'
 
 export interface CartItem {
   product: Product
   quantity: number
   priceType: PriceType
+  selectedGrams?: number
 }
 
 export interface OrderItem {
@@ -130,7 +135,20 @@ export const TAG_LABELS: Record<string, string> = {
 
 export const PRICE_TYPE_LABELS: Record<PriceType, string> = {
   kg: 'за кг',
-  box: 'за ящик',
+  gram: 'за 100г',
   pack: 'за упаковку',
+  box: 'за ящик',
   unit: 'за штуку',
+}
+
+/**
+ * Format weight in grams to human-readable string.
+ * < 1000g => display in grams, >= 1000g => display in kilograms.
+ */
+export function formatWeight(grams: number): string {
+  if (grams >= 1000) {
+    const kg = grams / 1000
+    return `${kg % 1 === 0 ? kg.toFixed(0) : kg.toFixed(1)} кг`
+  }
+  return `${grams} г`
 }

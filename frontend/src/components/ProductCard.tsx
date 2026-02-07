@@ -1,10 +1,35 @@
 import { useNavigate } from 'react-router-dom'
 import { useFavoritesStore } from '../store/favoritesStore'
 import type { Product } from '../types'
-import { TAG_LABELS } from '../types'
+import { TAG_LABELS, formatWeight } from '../types'
 
 interface Props {
   product: Product
+}
+
+/**
+ * Get the primary price label for the product card.
+ * Priority: kg > 100g > pack > box > unit.
+ */
+function getCardPriceLabel(product: Product): { price: string; unit: string } {
+  if (product.price_per_kg) {
+    return { price: product.price_per_kg, unit: 'р/кг' }
+  }
+  if (product.price_per_100g) {
+    return { price: product.price_per_100g, unit: 'р/100г' }
+  }
+  if (product.price_per_pack) {
+    const w = product.pack_weight ? ` (${formatWeight(product.pack_weight)})` : ''
+    return { price: product.price_per_pack, unit: `р/уп${w}` }
+  }
+  if (product.price_per_box) {
+    const w = product.box_weight ? ` (${formatWeight(product.box_weight)})` : ''
+    return { price: product.price_per_box, unit: `р/ящ${w}` }
+  }
+  if (product.price_per_unit) {
+    return { price: product.price_per_unit, unit: 'р/шт' }
+  }
+  return { price: '0', unit: '' }
 }
 
 export default function ProductCard({ product }: Props) {
@@ -12,13 +37,7 @@ export default function ProductCard({ product }: Props) {
   const { toggle, isFavorite } = useFavoritesStore()
   const fav = isFavorite(product.id)
 
-  // Get main price and unit label
-  let price = ''
-  let unit = ''
-  if (product.price_per_kg) { price = product.price_per_kg; unit = 'за кг' }
-  else if (product.price_per_unit) { price = product.price_per_unit; unit = 'за шт' }
-  else if (product.price_per_pack) { price = product.price_per_pack; unit = 'за уп' }
-  else if (product.price_per_box) { price = product.price_per_box; unit = 'за ящик' }
+  const { price, unit } = getCardPriceLabel(product)
 
   const tagColor = product.tag === 'sale' ? 'var(--red)' : product.tag === 'hit' ? '#FFC107' : 'var(--green-main)'
 
@@ -116,7 +135,7 @@ export default function ProductCard({ product }: Props) {
               {parseFloat(product.old_price).toFixed(0)} ₽
             </span>
           )}
-          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{unit}</span>
+          <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>/{unit.replace('р/', '')}</span>
         </div>
       </div>
     </div>

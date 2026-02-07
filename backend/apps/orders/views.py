@@ -19,7 +19,7 @@ from apps.users.models import User
 logger = logging.getLogger(__name__)
 
 PRICE_TYPE_LABELS = {
-    'kg': 'кг', 'box': 'ящ', 'pack': 'уп', 'unit': 'шт',
+    'kg': 'кг', 'gram': 'г', 'box': 'ящ', 'pack': 'уп', 'unit': 'шт',
 }
 
 
@@ -34,7 +34,8 @@ def _notify_admins_new_order(order):
         items_lines = []
         for item in order.items.all():
             unit = PRICE_TYPE_LABELS.get(item.price_type, '')
-            items_lines.append(f"  • {item.product_name} — {item.quantity} {unit} × {item.price:.0f} ₽")
+            qty_str = f"{item.quantity:.0f}" if item.quantity == int(item.quantity) else f"{item.quantity}"
+            items_lines.append(f"  • {item.product_name} — {qty_str} {unit} × {item.price:.0f} ₽")
 
         items_text = '\n'.join(items_lines) if items_lines else '  (нет товаров)'
 
@@ -110,21 +111,31 @@ def order_list_create(request):
             return Response({'error': f'Product {product_id} not found'}, status=400)
 
         # Get price based on type
-        price_map = {
-            'kg': product.price_per_kg,
-            'box': product.price_per_box,
-            'pack': product.price_per_pack,
-            'unit': product.price_per_unit,
-        }
-        price = price_map.get(price_type)
-        if price is None:
-            # Fallback to main price
-            price = product.main_price
+        if price_type == 'gram':
+            # For gram type, calculate price from price_per_100g * selected_grams / 100
+            selected_grams = item_data.get('selected_grams', 0)
+            if product.price_per_100g and selected_grams:
+                price = product.price_per_100g * Decimal(str(selected_grams)) / Decimal('100')
+            else:
+                price = product.main_price
+            product_name = f"{product.name} ({selected_grams}г)"
+        else:
+            price_map = {
+                'kg': product.price_per_kg,
+                'box': product.price_per_box,
+                'pack': product.price_per_pack,
+                'unit': product.price_per_unit,
+            }
+            price = price_map.get(price_type)
+            if price is None:
+                # Fallback to main price
+                price = product.main_price
+            product_name = product.name
 
         OrderItem.objects.create(
             order=order,
             product=product,
-            product_name=product.name,
+            product_name=product_name,
             quantity=quantity,
             price_type=price_type,
             price=price,

@@ -5,7 +5,40 @@ import { useCartStore } from '../store/cartStore'
 import { useFavoritesStore } from '../store/favoritesStore'
 import { useAppBackButton } from '../hooks/useAppBackButton'
 import type { Product, PriceType } from '../types'
-import { PRICE_TYPE_LABELS, TAG_LABELS } from '../types'
+import { TAG_LABELS, formatWeight } from '../types'
+
+/** Parse available_grams string "250,300,500" into number array */
+function parseAvailableGrams(s: string): number[] {
+  if (!s) return []
+  return s
+    .split(',')
+    .map((v) => parseInt(v.trim(), 10))
+    .filter((n) => !isNaN(n) && n > 0)
+}
+
+/** Build the list of available price options for this product, in priority order */
+function buildPriceOptions(product: Product) {
+  const opts: { type: PriceType; label: string; value: string }[] = []
+
+  if (product.price_per_kg) {
+    opts.push({ type: 'kg', label: 'за кг', value: product.price_per_kg })
+  }
+  if (product.price_per_100g) {
+    opts.push({ type: 'gram', label: 'за 100г', value: product.price_per_100g })
+  }
+  if (product.price_per_pack) {
+    const w = product.pack_weight ? ` (${formatWeight(product.pack_weight)})` : ''
+    opts.push({ type: 'pack', label: `за уп${w}`, value: product.price_per_pack })
+  }
+  if (product.price_per_box) {
+    const w = product.box_weight ? ` (${formatWeight(product.box_weight)})` : ''
+    opts.push({ type: 'box', label: `за ящ${w}`, value: product.price_per_box })
+  }
+  if (product.price_per_unit) {
+    opts.push({ type: 'unit', label: 'за шт', value: product.price_per_unit })
+  }
+  return opts
+}
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -14,6 +47,7 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true)
   const [selectedImage, setSelectedImage] = useState(0)
   const [selectedPrice, setSelectedPrice] = useState<PriceType>('kg')
+  const [selectedGrams, setSelectedGrams] = useState<number>(0)
   const addItem = useCartStore((s) => s.addItem)
   const { toggle, isFavorite } = useFavoritesStore()
   const [added, setAdded] = useState(false)
@@ -24,33 +58,51 @@ export default function ProductPage() {
     if (!id) return
     productsApi.detail(Number(id)).then((data) => {
       setProduct(data)
-      // Select first available price type
-      if (data.price_per_kg) setSelectedPrice('kg')
-      else if (data.price_per_unit) setSelectedPrice('unit')
-      else if (data.price_per_pack) setSelectedPrice('pack')
-      else if (data.price_per_box) setSelectedPrice('box')
+      // Select first available price type by priority
+      const opts = buildPriceOptions(data)
+      if (opts.length > 0) {
+        setSelectedPrice(opts[0].type)
+        // If first option is gram, select first available grammage
+        if (opts[0].type === 'gram') {
+          const grams = parseAvailableGrams(data.available_grams)
+          if (grams.length > 0) setSelectedGrams(grams[0])
+        }
+      }
     }).catch(console.error).finally(() => setLoading(false))
   }, [id])
 
   if (loading) return <div style={{ padding: 40, textAlign: 'center' }}>Загрузка...</div>
   if (!product) return <div style={{ padding: 40, textAlign: 'center' }}>Товар не найден</div>
 
-  const priceOptions = ([
-    { type: 'kg' as PriceType, value: product.price_per_kg },
-    { type: 'unit' as PriceType, value: product.price_per_unit },
-    { type: 'pack' as PriceType, value: product.price_per_pack },
-    { type: 'box' as PriceType, value: product.price_per_box },
-  ] as { type: PriceType; value: string | null }[]).filter((o) => o.value !== null)
+  const priceOptions = buildPriceOptions(product)
+  const availableGrams = parseAvailableGrams(product.available_grams)
 
-  const currentPrice = priceOptions.find((o) => o.type === selectedPrice)?.value || '0'
+  // Calculate current displayed price
+  let currentPrice = '0'
+  if (selectedPrice === 'gram' && product.price_per_100g) {
+    if (selectedGrams > 0) {
+      currentPrice = (parseFloat(product.price_per_100g) * selectedGrams / 100).toFixed(0)
+    } else {
+      currentPrice = product.price_per_100g
+    }
+  } else {
+    const opt = priceOptions.find((o) => o.type === selectedPrice)
+    currentPrice = opt?.value || '0'
+  }
+
+  const currentLabel = priceOptions.find((o) => o.type === selectedPrice)?.label || ''
+
   const fav = isFavorite(product.id)
   const tagColor = product.tag === 'sale' ? 'var(--red)' : product.tag === 'hit' ? '#FFC107' : 'var(--green-main)'
 
   const handleAdd = () => {
-    addItem(product, selectedPrice)
+    addItem(product, selectedPrice, selectedPrice === 'gram' ? selectedGrams : undefined)
     setAdded(true)
     setTimeout(() => setAdded(false), 1500)
   }
+
+  // For gram type, disable add if no grammage selected
+  const canAdd = product.in_stock && (selectedPrice !== 'gram' || selectedGrams > 0)
 
   return (
     <div style={{ background: 'var(--white)', minHeight: '100vh' }}>
@@ -122,13 +174,18 @@ export default function ProductPage() {
           {product.description || 'Свежий продукт от местных фермеров'}
         </p>
 
-        {/* Price selector */}
+        {/* Price type selector */}
         {priceOptions.length > 1 && (
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
             {priceOptions.map((opt) => (
               <button
                 key={opt.type}
-                onClick={() => setSelectedPrice(opt.type)}
+                onClick={() => {
+                  setSelectedPrice(opt.type)
+                  if (opt.type === 'gram' && availableGrams.length > 0 && selectedGrams === 0) {
+                    setSelectedGrams(availableGrams[0])
+                  }
+                }}
                 style={{
                   padding: '8px 16px',
                   borderRadius: 10,
@@ -139,9 +196,37 @@ export default function ProductPage() {
                   border: selectedPrice === opt.type ? '1px solid var(--green-main)' : '1px solid transparent',
                 }}
               >
-                {PRICE_TYPE_LABELS[opt.type]}
+                {opt.label}
               </button>
             ))}
+          </div>
+        )}
+
+        {/* Gram selector — shown when 'gram' price type is selected */}
+        {selectedPrice === 'gram' && availableGrams.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              Выберите граммовку:
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {availableGrams.map((g) => (
+                <button
+                  key={g}
+                  onClick={() => setSelectedGrams(g)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 10,
+                    fontSize: 13,
+                    fontWeight: selectedGrams === g ? 600 : 400,
+                    background: selectedGrams === g ? 'var(--green-bg)' : 'var(--bg)',
+                    color: selectedGrams === g ? 'var(--green-main)' : 'var(--text-secondary)',
+                    border: selectedGrams === g ? '1px solid var(--green-main)' : '1px solid transparent',
+                  }}
+                >
+                  {formatWeight(g)}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -156,23 +241,32 @@ export default function ProductPage() {
             </span>
           )}
           <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
-            {PRICE_TYPE_LABELS[selectedPrice]}
+            {selectedPrice === 'gram' && selectedGrams > 0
+              ? `за ${formatWeight(selectedGrams)}`
+              : currentLabel}
           </span>
         </div>
+
+        {/* Price per 100g hint when gram is selected */}
+        {selectedPrice === 'gram' && product.price_per_100g && selectedGrams > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 12, marginTop: -12 }}>
+            Цена за 100г: {parseFloat(product.price_per_100g).toFixed(0)} ₽
+          </div>
+        )}
 
         {/* Add to cart */}
         <button
           onClick={handleAdd}
-          disabled={!product.in_stock}
+          disabled={!canAdd}
           style={{
             width: '100%',
             padding: '14px 0',
             borderRadius: 12,
             fontSize: 16,
             fontWeight: 600,
-            background: product.in_stock
-              ? (added ? 'var(--green-light)' : 'linear-gradient(135deg, var(--green-dark), var(--green-light))')
-              : '#ccc',
+            background: !canAdd
+              ? '#ccc'
+              : (added ? 'var(--green-light)' : 'linear-gradient(135deg, var(--green-dark), var(--green-light))'),
             color: 'white',
             transition: 'all 0.2s',
           }}

@@ -26,6 +26,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'category', 'category_name',
             'price_per_kg', 'price_per_unit', 'price_per_pack', 'price_per_box',
+            'price_per_100g', 'available_grams',
+            'box_weight', 'pack_weight',
             'old_price', 'tag', 'in_stock', 'main_image',
         ]
 
@@ -49,6 +51,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'category', 'category_name', 'description',
             'price_per_kg', 'price_per_unit', 'price_per_pack', 'price_per_box',
+            'price_per_100g', 'available_grams',
+            'box_weight', 'pack_weight',
             'old_price', 'tag', 'in_stock', 'images', 'created_at',
         ]
 
@@ -60,5 +64,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         fields = [
             'name', 'category', 'description',
             'price_per_kg', 'price_per_unit', 'price_per_pack', 'price_per_box',
+            'price_per_100g', 'available_grams',
+            'box_weight', 'pack_weight',
             'old_price', 'tag', 'in_stock',
         ]

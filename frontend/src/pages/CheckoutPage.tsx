@@ -58,6 +58,7 @@ export default function CheckoutPage() {
           product_id: i.product.id,
           quantity: i.quantity,
           price_type: i.priceType,
+          ...(i.priceType === 'gram' && i.selectedGrams ? { selected_grams: i.selectedGrams } : {}),
         })),
       })
       clearCart()
