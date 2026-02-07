@@ -5,6 +5,12 @@ import { productsApi, categoriesApi } from '../../api/products'
 import type { Product, Category } from '../../types'
 import { TAG_LABELS, formatWeight } from '../../types'
 
+/** Parse comma-separated grams string into sorted number array */
+function parseGrams(s: string): number[] {
+  if (!s) return []
+  return s.split(',').map((v) => parseInt(v.trim(), 10)).filter((n) => !isNaN(n) && n > 0).sort((a, b) => a - b)
+}
+
 export default function AdminCategoryProducts() {
   const navigate = useNavigate()
   const { categoryId } = useParams<{ categoryId: string }>()
@@ -22,6 +28,8 @@ export default function AdminCategoryProducts() {
     box_weight: '', pack_weight: '',
     old_price: '', tag: '', in_stock: true,
   })
+  const [gramsList, setGramsList] = useState<number[]>([])
+  const [newGramValue, setNewGramValue] = useState('')
   const [images, setImages] = useState<File[]>([])
 
   useAppBackButton(useCallback(() => navigate('/admin/categories'), [navigate]))
@@ -52,12 +60,15 @@ export default function AdminCategoryProducts() {
       box_weight: '', pack_weight: '',
       old_price: '', tag: '', in_stock: true,
     })
+    setGramsList([])
+    setNewGramValue('')
     setImages([])
     setEditId(null)
     setShowForm(false)
   }
 
   const handleEdit = (p: Product) => {
+    const grams = parseGrams(p.available_grams || '')
     setForm({
       name: p.name,
       description: p.description || '',
@@ -66,13 +77,15 @@ export default function AdminCategoryProducts() {
       price_per_pack: p.price_per_pack || '',
       price_per_box: p.price_per_box || '',
       price_per_100g: p.price_per_100g || '',
-      available_grams: p.available_grams || '',
+      available_grams: grams.join(','),
       box_weight: p.box_weight != null ? String(p.box_weight) : '',
       pack_weight: p.pack_weight != null ? String(p.pack_weight) : '',
       old_price: p.old_price || '',
       tag: p.tag,
       in_stock: p.in_stock,
     })
+    setGramsList(grams)
+    setNewGramValue('')
     setEditId(p.id)
     setShowForm(true)
   }
@@ -87,7 +100,7 @@ export default function AdminCategoryProducts() {
     if (form.price_per_pack) fd.append('price_per_pack', form.price_per_pack)
     if (form.price_per_box) fd.append('price_per_box', form.price_per_box)
     if (form.price_per_100g) fd.append('price_per_100g', form.price_per_100g)
-    fd.append('available_grams', form.available_grams)
+    fd.append('available_grams', gramsList.join(','))
     if (form.box_weight) fd.append('box_weight', form.box_weight)
     if (form.pack_weight) fd.append('pack_weight', form.pack_weight)
     if (form.old_price) fd.append('old_price', form.old_price)
@@ -184,9 +197,83 @@ export default function AdminCategoryProducts() {
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Граммовки</div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <input style={inputStyle} placeholder="Цена за 100г" type="number" step="0.01" value={form.price_per_100g} onChange={(e) => setForm({ ...form, price_per_100g: e.target.value })} />
-              <input style={inputStyle} placeholder="Граммовки (250,300,500)" value={form.available_grams} onChange={(e) => setForm({ ...form, available_grams: e.target.value })} />
+            <input style={inputStyle} placeholder="Цена за 100г" type="number" step="0.01" value={form.price_per_100g} onChange={(e) => setForm({ ...form, price_per_100g: e.target.value })} />
+
+            {/* Grammage chips + add */}
+            <div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
+                <input
+                  style={{ ...inputStyle, flex: 1 }}
+                  placeholder="Граммовка, г"
+                  type="number"
+                  min="1"
+                  value={newGramValue}
+                  onChange={(e) => setNewGramValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const v = parseInt(newGramValue, 10)
+                      if (v > 0 && !gramsList.includes(v)) {
+                        const next = [...gramsList, v].sort((a, b) => a - b)
+                        setGramsList(next)
+                        setForm({ ...form, available_grams: next.join(',') })
+                      }
+                      setNewGramValue('')
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const v = parseInt(newGramValue, 10)
+                    if (v > 0 && !gramsList.includes(v)) {
+                      const next = [...gramsList, v].sort((a, b) => a - b)
+                      setGramsList(next)
+                      setForm({ ...form, available_grams: next.join(',') })
+                    }
+                    setNewGramValue('')
+                  }}
+                  style={{
+                    padding: '10px 16px', borderRadius: 8,
+                    background: 'var(--green-main)', color: 'white',
+                    fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap',
+                  }}
+                >
+                  +
+                </button>
+              </div>
+              {gramsList.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {gramsList.map((g) => (
+                    <span
+                      key={g}
+                      style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 4,
+                        background: 'var(--green-bg)', color: 'var(--green-main)',
+                        padding: '4px 10px', borderRadius: 8,
+                        fontSize: 13, fontWeight: 500,
+                      }}
+                    >
+                      {formatWeight(g)}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const next = gramsList.filter((x) => x !== g)
+                          setGramsList(next)
+                          setForm({ ...form, available_grams: next.join(',') })
+                        }}
+                        style={{
+                          background: 'none', padding: 0, marginLeft: 2,
+                          color: 'var(--green-main)', fontSize: 14, lineHeight: 1,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Масса упаковки / коробки (в граммах)</div>
