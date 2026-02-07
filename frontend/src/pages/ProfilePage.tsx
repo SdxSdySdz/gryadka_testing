@@ -12,8 +12,7 @@ export default function ProfilePage() {
 
   const adminMenuItems = [
     { label: 'Сводка', path: '/admin', icon: '📊' },
-    { label: 'Товары', path: '/admin/products', icon: '📦' },
-    { label: 'Категории', path: '/admin/categories', icon: '📁' },
+    { label: 'Категории и товары', path: '/admin/categories', icon: '📦' },
     { label: 'Заказы', path: '/admin/orders', icon: '🛍️' },
     { label: 'Мессенджер', path: '/admin/chat', icon: '💬' },
     { label: 'Аналитика', path: '/admin/analytics', icon: '📈' },

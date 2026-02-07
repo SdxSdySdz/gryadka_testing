@@ -12,8 +12,8 @@ import OrdersPage from './pages/OrdersPage'
 import ProfilePage from './pages/ProfilePage'
 import ChatPage from './pages/ChatPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
-import AdminProducts from './pages/admin/AdminProducts'
 import AdminCategories from './pages/admin/AdminCategories'
+import AdminCategoryProducts from './pages/admin/AdminCategoryProducts'
 import AdminOrders from './pages/admin/AdminOrders'
 import AdminChat from './pages/admin/AdminChat'
 import AdminSettings from './pages/admin/AdminSettings'
@@ -42,8 +42,8 @@ export default function App() {
           <Route path="/chat" element={<ChatPage />} />
           {/* Admin routes */}
           <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
           <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/categories/:categoryId/products" element={<AdminCategoryProducts />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
           <Route path="/admin/chat" element={<AdminChat />} />
           <Route path="/admin/settings" element={<AdminSettings />} />

@@ -13,7 +13,7 @@ export default function AdminCategories() {
   const [name, setName] = useState('')
   const [image, setImage] = useState<File | null>(null)
 
-  useAppBackButton(useCallback(() => navigate('/profile'), [navigate]))
+  useAppBackButton(useCallback(() => navigate('/admin'), [navigate]))
 
   useEffect(() => { loadData() }, [])
 
@@ -54,13 +54,15 @@ export default function AdminCategories() {
 
   const handleDelete = async (id: number) => {
     if (!confirm('Удалить категорию? Все товары в ней тоже будут удалены!')) return
-    await categoriesApi.adminDelete(id)
-    loadData()
+    try {
+      await categoriesApi.adminDelete(id)
+      loadData()
+    } catch (e) { console.error(e) }
   }
 
-  const inputStyle = {
+  const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14,
+    border: '1px solid #e0e0e0', fontSize: 14, boxSizing: 'border-box',
   }
 
   return (
@@ -68,7 +70,7 @@ export default function AdminCategories() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <h2 style={{ fontSize: 20, fontWeight: 700 }}>Категории</h2>
         <button
-          onClick={() => { resetForm(); setShowForm(true) }}
+          onClick={(e) => { e.stopPropagation(); resetForm(); setShowForm(true) }}
           style={{
             padding: '8px 16px', borderRadius: 10,
             background: 'var(--green-main)', color: 'white',
@@ -101,15 +103,21 @@ export default function AdminCategories() {
 
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}>Загрузка...</div>
+      ) : categories.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>
+          Нет категорий. Добавьте первую!
+        </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {categories.map((cat) => (
             <div
               key={cat.id}
+              onClick={() => navigate(`/admin/categories/${cat.id}/products`)}
               style={{
                 background: 'var(--white)', borderRadius: 12,
                 padding: 12, boxShadow: 'var(--shadow)',
                 display: 'flex', alignItems: 'center', gap: 12,
+                cursor: 'pointer',
               }}
             >
               <div style={{
@@ -125,17 +133,18 @@ export default function AdminCategories() {
 
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 500 }}>{cat.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Нажмите, чтобы управлять товарами →</div>
               </div>
 
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
-                  onClick={() => { setName(cat.name); setEditId(cat.id); setShowForm(true) }}
+                  onClick={(e) => { e.stopPropagation(); setName(cat.name); setEditId(cat.id); setShowForm(true) }}
                   style={{ background: 'var(--green-bg)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--green-main)' }}
                 >
                   ✏️
                 </button>
                 <button
-                  onClick={() => handleDelete(cat.id)}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(cat.id) }}
                   style={{ background: '#FFF3F0', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: 'var(--red)' }}
                 >
                   🗑️
