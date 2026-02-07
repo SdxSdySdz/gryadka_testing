@@ -26,12 +26,12 @@ class OrderSerializer(serializers.ModelSerializer):
 
 
 class OrderCreateSerializer(serializers.Serializer):
-    delivery_method = serializers.CharField(required=False, default='')
-    delivery_district = serializers.CharField(required=False, default='')
-    delivery_interval = serializers.CharField(required=False, default='')
-    payment_method = serializers.CharField(required=False, default='')
-    comment = serializers.CharField(required=False, default='')
-    promo_code = serializers.CharField(required=False, default='')
+    delivery_method = serializers.CharField(required=False, default='', allow_blank=True)
+    delivery_district = serializers.CharField(required=False, default='', allow_blank=True)
+    delivery_interval = serializers.CharField(required=False, default='', allow_blank=True)
+    payment_method = serializers.CharField(required=False, default='', allow_blank=True)
+    comment = serializers.CharField(required=False, default='', allow_blank=True)
+    promo_code = serializers.CharField(required=False, default='', allow_blank=True)
     items = serializers.ListField(child=serializers.DictField(), min_length=1)
 
 
