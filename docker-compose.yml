@@ -1,0 +1,61 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gryadka}
+      POSTGRES_USER: ${POSTGRES_USER:-gryadka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gryadka_secret}
+    restart: always
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+
+  django:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    entrypoint: ["/bin/bash", "/app/entrypoint.sh"]
+    command: ["gunicorn", "project.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+    environment:
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY}
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost}
+      POSTGRES_DB: ${POSTGRES_DB:-gryadka}
+      POSTGRES_USER: ${POSTGRES_USER:-gryadka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gryadka_secret}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ADMIN_IDS: ${TELEGRAM_ADMIN_IDS}
+    depends_on:
+      - postgres
+      - redis
+    restart: always
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - media_data:/app/media
+      - static_data:/app/staticfiles
+      - ./docker/nginx/certbot/conf:/etc/letsencrypt
+      - ./docker/nginx/certbot/www:/var/www/certbot
+    depends_on:
+      - django
+    restart: always
+
+volumes:
+  postgres_data:
+  media_data:
+  static_data:

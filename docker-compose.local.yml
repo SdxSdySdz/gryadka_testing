@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-gryadka}
+      POSTGRES_USER: ${POSTGRES_USER:-gryadka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gryadka_secret}
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  django:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    entrypoint: ["/bin/bash", "/app/entrypoint.sh"]
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    volumes:
+      - ./backend:/app
+      - /app/__pycache__
+    environment:
+      DJANGO_SECRET_KEY: dev-secret-key-change-me
+      DJANGO_DEBUG: "1"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+      POSTGRES_DB: ${POSTGRES_DB:-gryadka}
+      POSTGRES_USER: ${POSTGRES_USER:-gryadka}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-gryadka_secret}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: "5432"
+      REDIS_URL: redis://redis:6379/0
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      TELEGRAM_ADMIN_IDS: ${TELEGRAM_ADMIN_IDS:-587362201}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+
+  vite:
+    build:
+      context: .
+      dockerfile: docker/vite/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    restart: always
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx-local/Dockerfile
+    ports:
+      - "80:80"
+    volumes:
+      - ./backend/media:/app/media
+    depends_on:
+      - django
+      - vite
+
+volumes:
+  postgres_data:
