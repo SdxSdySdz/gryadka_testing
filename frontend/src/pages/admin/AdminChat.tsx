@@ -14,34 +14,50 @@ export default function AdminChat() {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastMsgIdRef = useRef<number>(0)
 
   useAppBackButton(useCallback(() => {
     if (selectedRoom) {
       setSelectedRoom(null)
     } else {
-      navigate('/profile')
+      navigate('/admin')
     }
   }, [navigate, selectedRoom]))
 
+  // Poll rooms list
   useEffect(() => {
     loadRooms()
     const interval = setInterval(loadRooms, 5000)
     return () => clearInterval(interval)
   }, [])
 
+  // Poll messages when a room is selected
   useEffect(() => {
-    if (selectedRoom) {
-      loadMessages(selectedRoom)
-      pollingRef.current = setInterval(() => pollMessages(selectedRoom), 3000)
+    if (!selectedRoom) return
+
+    const loadMsgs = async () => {
+      try {
+        const data = await chatApi.getRoomMessages(selectedRoom)
+        setMessages(data)
+      } catch (e) { console.error(e) }
     }
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-    }
+
+    loadMsgs()
+    const interval = setInterval(loadMsgs, 3000)
+    return () => clearInterval(interval)
   }, [selectedRoom])
 
+  // Auto-scroll on new messages
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+    if (messages.length > 0) {
+      const lastId = messages[messages.length - 1].id
+      if (lastId !== lastMsgIdRef.current) {
+        lastMsgIdRef.current = lastId
+        setTimeout(() => {
+          scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+        }, 50)
+      }
+    }
   }, [messages])
 
   const loadRooms = async () => {
@@ -51,31 +67,17 @@ export default function AdminChat() {
     } catch (e) { console.error(e) }
   }
 
-  const loadMessages = async (roomId: number) => {
-    try {
-      const data = await chatApi.getRoomMessages(roomId)
-      setMessages(data)
-    } catch (e) { console.error(e) }
-  }
-
-  const pollMessages = async (roomId: number) => {
-    if (messages.length === 0) return
-    const last = messages[messages.length - 1]
-    try {
-      const newMsgs = await chatApi.getRoomMessages(roomId, last.created_at)
-      if (newMsgs.length > 0) {
-        setMessages((prev) => [...prev, ...newMsgs])
-      }
-    } catch (e) { console.error(e) }
-  }
-
   const handleSend = async () => {
     if (!text.trim() || !selectedRoom || sending) return
     setSending(true)
     try {
       const msg = await chatApi.sendAdminMessage(selectedRoom, text.trim())
       setMessages((prev) => [...prev, msg])
+      lastMsgIdRef.current = msg.id
       setText('')
+      setTimeout(() => {
+        scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+      }, 50)
     } catch (e) { console.error(e) }
     finally { setSending(false) }
   }
@@ -162,6 +164,11 @@ export default function AdminChat() {
 
       {/* Messages */}
       <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {messages.length === 0 && (
+          <div style={{ textAlign: 'center', color: 'var(--text-secondary)', padding: 40 }}>
+            Нет сообщений
+          </div>
+        )}
         {messages.map((msg) => {
           const isAdmin = msg.sender_is_admin
           return (

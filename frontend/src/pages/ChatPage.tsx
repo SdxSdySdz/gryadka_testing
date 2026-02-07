@@ -12,48 +12,53 @@ export default function ChatPage() {
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const lastMsgIdRef = useRef<number>(0)
 
   useAppBackButton(useCallback(() => navigate(-1), [navigate]))
 
-  // Load messages
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     try {
       const msgs = await chatApi.getMessages()
       setMessages(msgs)
-    } catch (e) {
-      console.error(e)
-    }
-  }
-
-  // Poll for new messages
-  const pollMessages = async () => {
-    if (messages.length === 0) return
-    const lastMsg = messages[messages.length - 1]
-    try {
-      const newMsgs = await chatApi.getMessages(lastMsg.created_at)
-      if (newMsgs.length > 0) {
-        setMessages((prev) => [...prev, ...newMsgs])
+      if (msgs.length > 0) {
+        lastMsgIdRef.current = msgs[msgs.length - 1].id
       }
     } catch (e) {
       console.error(e)
     }
-  }
-
-  useEffect(() => {
-    // Notify admins that client opened the chat
-    chatApi.openChat().catch(console.error)
-    loadMessages()
-    pollingRef.current = setInterval(pollMessages, 3000)
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current)
-    }
   }, [])
 
-  // Auto-scroll
+  // Initial load + notify admins + start polling
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+    chatApi.openChat().catch(console.error)
+    loadMessages()
+
+    const interval = setInterval(() => {
+      loadMessages()
+    }, 3000)
+
+    return () => clearInterval(interval)
+  }, [loadMessages])
+
+  // Auto-scroll when new messages arrive
+  useEffect(() => {
+    if (messages.length > 0) {
+      const lastId = messages[messages.length - 1].id
+      if (lastId !== lastMsgIdRef.current) {
+        lastMsgIdRef.current = lastId
+        setTimeout(() => {
+          scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+        }, 50)
+      }
+    }
   }, [messages])
+
+  // Scroll on first load too
+  useEffect(() => {
+    if (messages.length > 0) {
+      scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+    }
+  }, [messages.length > 0])
 
   const handleSend = async () => {
     if (!text.trim() || sending) return
@@ -61,7 +66,11 @@ export default function ChatPage() {
     try {
       const msg = await chatApi.sendMessage(text.trim())
       setMessages((prev) => [...prev, msg])
+      lastMsgIdRef.current = msg.id
       setText('')
+      setTimeout(() => {
+        scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight)
+      }, 50)
     } catch (e) {
       console.error(e)
     } finally {
