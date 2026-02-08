@@ -32,35 +32,7 @@ def _notify_admins_new_message(client_user, text):
         pass
 
 
-def _notify_admins_chat_opened(client_user):
-    """Send Telegram notification to admins that client opened the chat."""
-    try:
-        import telegram
-        bot = telegram.Bot(token=settings.TELEGRAM_BOT_TOKEN)
-        admins = User.objects.filter(is_admin=True)
-        message_text = (
-            f"📩 {client_user.display_name} открыл(а) мессенджер.\n"
-            f"Клиент ждёт ответа!"
-        )
-        for admin in admins:
-            try:
-                asyncio.get_event_loop().run_until_complete(
-                    bot.send_message(chat_id=admin.telegram_id, text=message_text)
-                )
-            except Exception:
-                pass
-    except Exception:
-        pass
-
-
 # ─── Client endpoints ──────────────────────────────────────
-
-@api_view(['POST'])
-def client_open_chat(request):
-    """Client: notify admins that chat was opened."""
-    room, created = ChatRoom.objects.get_or_create(client=request.tma_user)
-    _notify_admins_chat_opened(request.tma_user)
-    return Response({'status': 'ok'})
 
 
 @api_view(['GET'])

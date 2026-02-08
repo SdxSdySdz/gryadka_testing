@@ -28,9 +28,8 @@ export default function ChatPage() {
     }
   }, [])
 
-  // Initial load + notify admins + start polling
+  // Initial load + start polling
   useEffect(() => {
-    chatApi.openChat().catch(console.error)
     loadMessages()
 
     const interval = setInterval(() => {

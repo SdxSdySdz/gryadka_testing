@@ -3,7 +3,6 @@ from apps.chat import views
 
 urlpatterns = [
     # Client
-    path('open/', views.client_open_chat, name='client-open-chat'),
     path('messages/', views.client_messages, name='client-messages'),
     path('messages/send/', views.client_send_message, name='client-send-message'),
     # Admin
