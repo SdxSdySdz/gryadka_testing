@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { productsApi } from '../api/products'
 import { useCartStore } from '../store/cartStore'
 import { useFavoritesStore } from '../store/favoritesStore'
+import { useUserStore } from '../store/userStore'
 import { useAppBackButton } from '../hooks/useAppBackButton'
 import type { Product, PriceType } from '../types'
 import { TAG_LABELS, formatWeight } from '../types'
@@ -50,6 +51,7 @@ export default function ProductPage() {
   const [selectedGrams, setSelectedGrams] = useState<number>(0)
   const addItem = useCartStore((s) => s.addItem)
   const { toggle, isFavorite } = useFavoritesStore()
+  const user = useUserStore((s) => s.user)
   const [added, setAdded] = useState(false)
 
   useAppBackButton(useCallback(() => navigate(-1), [navigate]))
@@ -273,6 +275,33 @@ export default function ProductPage() {
         >
           {!product.in_stock ? 'Нет в наличии' : added ? 'Добавлено!' : 'В корзину'}
         </button>
+
+        {/* Admin: open in admin panel */}
+        {user?.is_admin && (
+          <button
+            onClick={() => navigate(`/admin/categories/${product.category}/products?edit=${product.id}`)}
+            style={{
+              width: '100%',
+              padding: '12px 0',
+              borderRadius: 12,
+              fontSize: 14,
+              fontWeight: 500,
+              background: 'transparent',
+              color: 'var(--green-main)',
+              border: '1px solid var(--green-main)',
+              marginTop: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Открыть в админ-панели
+          </button>
+        )}
       </div>
     </div>
   )

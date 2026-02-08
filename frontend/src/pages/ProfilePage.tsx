@@ -17,6 +17,7 @@ export default function ProfilePage() {
     { label: 'Мессенджер', path: '/admin/chat', icon: '💬' },
     { label: 'Аналитика', path: '/admin/analytics', icon: '📈' },
     { label: 'Настройки', path: '/admin/settings', icon: '⚙️' },
+    { label: 'Клиенты', path: '/admin/clients', icon: '🧑‍💼' },
     { label: 'Админы', path: '/admin/users', icon: '👥' },
   ]
 

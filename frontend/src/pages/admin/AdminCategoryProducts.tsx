@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAppBackButton } from '../../hooks/useAppBackButton'
 import { productsApi, categoriesApi } from '../../api/products'
 import type { Product, Category } from '../../types'
@@ -14,7 +14,9 @@ function parseGrams(s: string): number[] {
 export default function AdminCategoryProducts() {
   const navigate = useNavigate()
   const { categoryId } = useParams<{ categoryId: string }>()
+  const [searchParams, setSearchParams] = useSearchParams()
   const catId = Number(categoryId)
+  const editFromQuery = searchParams.get('edit')
 
   const [category, setCategory] = useState<Category | null>(null)
   const [products, setProducts] = useState<Product[]>([])
@@ -51,6 +53,18 @@ export default function AdminCategoryProducts() {
     } catch (e) { console.error(e) }
     finally { setLoading(false) }
   }
+
+  // Auto-open edit form when navigated with ?edit=ID
+  useEffect(() => {
+    if (editFromQuery && products.length > 0 && !showForm) {
+      const productToEdit = products.find((p) => p.id === Number(editFromQuery))
+      if (productToEdit) {
+        handleEdit(productToEdit)
+        // Clear the query param so it doesn't re-trigger
+        setSearchParams({}, { replace: true })
+      }
+    }
+  }, [editFromQuery, products])
 
   const resetForm = () => {
     setForm({

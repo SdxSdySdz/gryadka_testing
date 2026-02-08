@@ -19,6 +19,7 @@ import AdminChat from './pages/admin/AdminChat'
 import AdminSettings from './pages/admin/AdminSettings'
 import AdminAnalytics from './pages/admin/AdminAnalytics'
 import AdminUsers from './pages/admin/AdminUsers'
+import AdminClients from './pages/admin/AdminClients'
 
 export default function App() {
   const fetchUser = useUserStore((s) => s.fetchUser)
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/users" element={<AdminUsers />} />
+          <Route path="/admin/clients" element={<AdminClients />} />
         </Route>
       </Routes>
     </BrowserRouter>

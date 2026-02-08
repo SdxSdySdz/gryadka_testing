@@ -62,3 +62,34 @@ def admin_remove(request, telegram_id):
     if user is None:
         return Response({'error': 'User not found'}, status=404)
     return Response(UserSerializer(user).data)
+
+
+@api_view(['GET'])
+def admin_client_search(request):
+    """Search clients by name, username or telegram_id. Admin only."""
+    if not request.tma_user.is_admin:
+        return Response({'error': 'Forbidden'}, status=403)
+
+    search = request.query_params.get('search', '').strip()
+    qs = User.objects.all().order_by('-created_at')
+
+    if search:
+        from django.db.models import Q
+        # Try to parse as integer for telegram_id search
+        try:
+            tid = int(search)
+            qs = qs.filter(
+                Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(username__icontains=search)
+                | Q(telegram_id=tid)
+            )
+        except ValueError:
+            qs = qs.filter(
+                Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(username__icontains=search)
+            )
+
+    serializer = UserSerializer(qs[:50], many=True)
+    return Response(serializer.data)

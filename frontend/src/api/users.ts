@@ -17,4 +17,7 @@ export const usersApi = {
 
   adminRemove: (telegram_id: number) =>
     http.delete(`/users/admin/${telegram_id}/remove/`).then((r) => r.data),
+
+  searchClients: (search: string) =>
+    http.get<User[]>('/users/admin/clients/', { params: { search } }).then((r) => r.data),
 }

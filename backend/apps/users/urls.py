@@ -6,4 +6,5 @@ urlpatterns = [
     path('admin/', views.admin_list, name='admin-list'),
     path('admin/add/', views.admin_add, name='admin-add'),
     path('admin/<int:telegram_id>/remove/', views.admin_remove, name='admin-remove'),
+    path('admin/clients/', views.admin_client_search, name='admin-client-search'),
 ]
