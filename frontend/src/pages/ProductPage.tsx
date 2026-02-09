@@ -50,9 +50,11 @@ export default function ProductPage() {
   const [selectedPrice, setSelectedPrice] = useState<PriceType>('kg')
   const [selectedGrams, setSelectedGrams] = useState<number>(0)
   const addItem = useCartStore((s) => s.addItem)
+  const cartItems = useCartStore((s) => s.items)
+  const updateQuantity = useCartStore((s) => s.updateQuantity)
+  const removeItem = useCartStore((s) => s.removeItem)
   const { toggle, isFavorite } = useFavoritesStore()
   const user = useUserStore((s) => s.user)
-  const [added, setAdded] = useState(false)
 
   useAppBackButton(useCallback(() => navigate(-1), [navigate]))
 
@@ -97,10 +99,17 @@ export default function ProductPage() {
   const fav = isFavorite(product.id)
   const tagColor = product.tag === 'sale' ? 'var(--red)' : product.tag === 'hit' ? '#FFC107' : 'var(--green-main)'
 
+  // Find current item in cart
+  const currentGrams = selectedPrice === 'gram' ? selectedGrams : undefined
+  const cartItem = cartItems.find((i) => {
+    if (i.product.id !== product.id || i.priceType !== selectedPrice) return false
+    if (selectedPrice === 'gram') return i.selectedGrams === selectedGrams
+    return true
+  })
+  const cartQuantity = cartItem?.quantity || 0
+
   const handleAdd = () => {
-    addItem(product, selectedPrice, selectedPrice === 'gram' ? selectedGrams : undefined)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 1500)
+    addItem(product, selectedPrice, currentGrams)
   }
 
   // For gram type, disable add if no grammage selected
@@ -256,25 +265,88 @@ export default function ProductPage() {
           </div>
         )}
 
-        {/* Add to cart */}
-        <button
-          onClick={handleAdd}
-          disabled={!canAdd}
-          style={{
+        {/* Add to cart / Quantity controls */}
+        {!product.in_stock ? (
+          <button
+            disabled
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              borderRadius: 12,
+              fontSize: 16,
+              fontWeight: 600,
+              background: '#ccc',
+              color: 'white',
+            }}
+          >
+            Нет в наличии
+          </button>
+        ) : cartQuantity > 0 ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 20,
             width: '100%',
-            padding: '14px 0',
+            padding: '6px 0',
             borderRadius: 12,
-            fontSize: 16,
-            fontWeight: 600,
-            background: !canAdd
-              ? '#ccc'
-              : (added ? 'var(--green-light)' : 'linear-gradient(135deg, var(--green-dark), var(--green-light))'),
-            color: 'white',
-            transition: 'all 0.2s',
-          }}
-        >
-          {!product.in_stock ? 'Нет в наличии' : added ? 'Добавлено!' : 'В корзину'}
-        </button>
+            background: 'var(--green-bg)',
+            border: '1px solid var(--green-main)',
+          }}>
+            <button
+              onClick={() => {
+                if (cartQuantity <= 1) {
+                  removeItem(product.id, selectedPrice, currentGrams)
+                } else {
+                  updateQuantity(product.id, cartQuantity - 1, selectedPrice, currentGrams)
+                }
+              }}
+              style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: 'var(--white)', fontSize: 20, fontWeight: 600,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'var(--green-main)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              }}
+            >
+              −
+            </button>
+            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--green-main)', minWidth: 30, textAlign: 'center' }}>
+              {cartQuantity}
+            </span>
+            <button
+              onClick={() => updateQuantity(product.id, cartQuantity + 1, selectedPrice, currentGrams)}
+              style={{
+                width: 40, height: 40, borderRadius: 10,
+                background: 'var(--green-main)', fontSize: 20, fontWeight: 600,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              }}
+            >
+              +
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={handleAdd}
+            disabled={!canAdd}
+            style={{
+              width: '100%',
+              padding: '14px 0',
+              borderRadius: 12,
+              fontSize: 16,
+              fontWeight: 600,
+              background: !canAdd
+                ? '#ccc'
+                : 'linear-gradient(135deg, var(--green-dark), var(--green-light))',
+              color: 'white',
+              transition: 'all 0.2s',
+            }}
+          >
+            В корзину
+          </button>
+        )}
 
         {/* Admin: open in admin panel */}
         {user?.is_admin && (
