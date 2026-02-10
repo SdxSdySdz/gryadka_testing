@@ -284,15 +284,21 @@ export default function ProductPage() {
         ) : cartQuantity > 0 ? (
           <div style={{
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            flexDirection: 'column',
+            gap: 10,
             width: '100%',
-            padding: '6px 12px',
-            borderRadius: 12,
-            background: 'var(--green-bg)',
-            border: '1px solid var(--green-main)',
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 20,
+              width: '100%',
+              padding: '6px 0',
+              borderRadius: 12,
+              background: 'var(--green-bg)',
+              border: '1px solid var(--green-main)',
+            }}>
               <button
                 onClick={() => {
                   if (cartQuantity <= 1) {
@@ -327,9 +333,9 @@ export default function ProductPage() {
                 +
               </button>
             </div>
-            <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--green-main)' }}>
-              {(parseFloat(currentPrice) * cartQuantity).toFixed(0)} ₽
-            </span>
+            <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 600, color: 'var(--green-main)' }}>
+              Итого: {(parseFloat(currentPrice) * cartQuantity).toFixed(0)} ₽
+            </div>
           </div>
         ) : (
           <button
