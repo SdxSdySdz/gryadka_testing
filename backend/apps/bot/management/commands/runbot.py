@@ -1,3 +1,4 @@
+import os
 import asyncio
 from asgiref.sync import sync_to_async
 from django.core.management.base import BaseCommand
@@ -31,7 +32,7 @@ class Command(BaseCommand):
         # Wrap sync Django ORM call in sync_to_async
         user, created = await sync_to_async(UserService.update_or_create_from_bot)(tg_user)
 
-        domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost'
+        domain = os.environ.get('DOMAIN') or (settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost')
         webapp_url = f'https://{domain}'
 
         keyboard = InlineKeyboardMarkup([

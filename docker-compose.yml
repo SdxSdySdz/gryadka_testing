@@ -34,6 +34,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_ADMIN_IDS: ${TELEGRAM_ADMIN_IDS}
+      DOMAIN: ${DOMAIN:-localhost}
     depends_on:
       - postgres
       - redis
@@ -56,6 +57,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
       TELEGRAM_ADMIN_IDS: ${TELEGRAM_ADMIN_IDS}
+      DOMAIN: ${DOMAIN:-localhost}
     depends_on:
       - postgres
       - redis

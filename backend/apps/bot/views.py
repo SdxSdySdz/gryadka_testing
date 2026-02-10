@@ -1,3 +1,4 @@
+import os
 import json
 import asyncio
 
@@ -50,7 +51,7 @@ def _handle_message(bot, update):
 
 def _handle_start(bot, message, user):
     """Handle /start command."""
-    domain = settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost'
+    domain = os.environ.get('DOMAIN') or (settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost')
     webapp_url = f'https://{domain}'
 
     keyboard = InlineKeyboardMarkup([
