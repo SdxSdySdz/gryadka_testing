@@ -1,6 +1,7 @@
-import { useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '../store/cartStore'
+import { settingsApi } from '../api/settings'
 import { useAppBackButton } from '../hooks/useAppBackButton'
 import { PRICE_TYPE_LABELS, formatWeight } from '../types'
 import type { CartItem, PriceType } from '../types'
@@ -30,8 +31,15 @@ function getItemLabel(item: CartItem): string {
 export default function CartPage() {
   const navigate = useNavigate()
   const { items, updateQuantity, removeItem, totalPrice, clearCart } = useCartStore()
+  const [minSum, setMinSum] = useState(0)
 
   useAppBackButton(useCallback(() => navigate(-1), [navigate]))
+
+  useEffect(() => {
+    settingsApi.getPublic().then((s) => {
+      setMinSum(parseFloat(s.min_order_sum) || 0)
+    }).catch(console.error)
+  }, [])
 
   if (items.length === 0) {
     return (
@@ -161,27 +169,43 @@ export default function CartPage() {
       </div>
 
       {/* Total + checkout */}
-      <div style={{
-        background: 'var(--white)', borderRadius: 16,
-        padding: 16, boxShadow: 'var(--shadow)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <span style={{ fontSize: 16, fontWeight: 600 }}>Итого:</span>
-          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--green-main)' }}>
-            {totalPrice().toFixed(0)} ₽
-          </span>
-        </div>
-        <button
-          onClick={() => navigate('/checkout')}
-          style={{
-            width: '100%', padding: '14px 0', borderRadius: 12,
-            background: 'linear-gradient(135deg, var(--green-dark), var(--green-light))',
-            color: 'white', fontSize: 16, fontWeight: 600,
-          }}
-        >
-          Оформить заказ
-        </button>
-      </div>
+      {(() => {
+        const total = totalPrice()
+        const belowMin = minSum > 0 && total < minSum
+        return (
+          <div style={{
+            background: 'var(--white)', borderRadius: 16,
+            padding: 16, boxShadow: 'var(--shadow)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: 16, fontWeight: 600 }}>Итого:</span>
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--green-main)' }}>
+                {total.toFixed(0)} ₽
+              </span>
+            </div>
+            {belowMin && (
+              <div style={{
+                background: '#FFF3F0', borderRadius: 10,
+                padding: '8px 14px', marginBottom: 12,
+                color: 'var(--red)', fontSize: 13, fontWeight: 500,
+              }}>
+                Минимальная сумма заказа: {minSum.toFixed(0)} ₽ (не хватает {(minSum - total).toFixed(0)} ₽)
+              </div>
+            )}
+            <button
+              onClick={() => !belowMin && navigate('/checkout')}
+              disabled={belowMin}
+              style={{
+                width: '100%', padding: '14px 0', borderRadius: 12,
+                background: belowMin ? '#ccc' : 'linear-gradient(135deg, var(--green-dark), var(--green-light))',
+                color: 'white', fontSize: 16, fontWeight: 600,
+              }}
+            >
+              {belowMin ? `Минимум ${minSum.toFixed(0)} ₽` : 'Оформить заказ'}
+            </button>
+          </div>
+        )
+      })()}
     </div>
   )
 }

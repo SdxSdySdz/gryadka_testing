@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAppBackButton } from '../../hooks/useAppBackButton'
 import { chatApi } from '../../api/chat'
 import { useUserStore } from '../../store/userStore'
@@ -7,9 +7,11 @@ import type { ChatRoom, ChatMessage } from '../../types'
 
 export default function AdminChat() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const user = useUserStore((s) => s.user)
   const [rooms, setRooms] = useState<ChatRoom[]>([])
-  const [selectedRoom, setSelectedRoom] = useState<number | null>(null)
+  const roomFromUrl = searchParams.get('room')
+  const [selectedRoom, setSelectedRoom] = useState<number | null>(roomFromUrl ? Number(roomFromUrl) : null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [text, setText] = useState('')
   const [sending, setSending] = useState(false)

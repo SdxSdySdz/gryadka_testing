@@ -17,6 +17,7 @@ from apps.orders.serializers import (
 from apps.products.models import Product
 from apps.users.models import User
 from apps.settings_app.models import ShopSettings, DeliveryMethod
+from apps.chat.models import ChatRoom
 
 logger = logging.getLogger(__name__)
 
@@ -52,6 +53,9 @@ def _notify_admins_new_order(order):
         if order.comment:
             text += f"\n\n💬 {order.comment}"
 
+        # Ensure chat room exists for this client
+        chat_room, _ = ChatRoom.objects.get_or_create(client=order.user)
+
         domain = os.environ.get('DOMAIN') or (django_settings.ALLOWED_HOSTS[0] if django_settings.ALLOWED_HOSTS else 'localhost')
         webapp_url = f'https://{domain}'
 
@@ -62,7 +66,7 @@ def _notify_admins_new_order(order):
             )],
             [telegram.InlineKeyboardButton(
                 text='💬 Чат с клиентом',
-                web_app=telegram.WebAppInfo(url=f'{webapp_url}/admin/chat'),
+                web_app=telegram.WebAppInfo(url=f'{webapp_url}/admin/chat?room={chat_room.id}'),
             )],
         ])
 
