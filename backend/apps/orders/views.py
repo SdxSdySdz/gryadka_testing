@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 from decimal import Decimal
@@ -51,7 +52,7 @@ def _notify_admins_new_order(order):
         if order.comment:
             text += f"\n\n💬 {order.comment}"
 
-        domain = django_settings.ALLOWED_HOSTS[0] if django_settings.ALLOWED_HOSTS else 'localhost'
+        domain = os.environ.get('DOMAIN') or (django_settings.ALLOWED_HOSTS[0] if django_settings.ALLOWED_HOSTS else 'localhost')
         webapp_url = f'https://{domain}'
 
         keyboard = telegram.InlineKeyboardMarkup([
