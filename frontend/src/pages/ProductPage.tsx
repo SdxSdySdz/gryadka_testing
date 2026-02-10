@@ -285,47 +285,51 @@ export default function ProductPage() {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: 20,
+            justifyContent: 'space-between',
             width: '100%',
-            padding: '6px 0',
+            padding: '6px 12px',
             borderRadius: 12,
             background: 'var(--green-bg)',
             border: '1px solid var(--green-main)',
           }}>
-            <button
-              onClick={() => {
-                if (cartQuantity <= 1) {
-                  removeItem(product.id, selectedPrice, currentGrams)
-                } else {
-                  updateQuantity(product.id, cartQuantity - 1, selectedPrice, currentGrams)
-                }
-              }}
-              style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: 'var(--white)', fontSize: 20, fontWeight: 600,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'var(--green-main)',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            >
-              −
-            </button>
-            <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--green-main)', minWidth: 30, textAlign: 'center' }}>
-              {cartQuantity}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <button
+                onClick={() => {
+                  if (cartQuantity <= 1) {
+                    removeItem(product.id, selectedPrice, currentGrams)
+                  } else {
+                    updateQuantity(product.id, cartQuantity - 1, selectedPrice, currentGrams)
+                  }
+                }}
+                style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: 'var(--white)', fontSize: 20, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'var(--green-main)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                }}
+              >
+                −
+              </button>
+              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--green-main)', minWidth: 24, textAlign: 'center' }}>
+                {cartQuantity}
+              </span>
+              <button
+                onClick={() => updateQuantity(product.id, cartQuantity + 1, selectedPrice, currentGrams)}
+                style={{
+                  width: 40, height: 40, borderRadius: 10,
+                  background: 'var(--green-main)', fontSize: 20, fontWeight: 600,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'white',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                }}
+              >
+                +
+              </button>
+            </div>
+            <span style={{ fontSize: 18, fontWeight: 700, color: 'var(--green-main)' }}>
+              {(parseFloat(currentPrice) * cartQuantity).toFixed(0)} ₽
             </span>
-            <button
-              onClick={() => updateQuantity(product.id, cartQuantity + 1, selectedPrice, currentGrams)}
-              style={{
-                width: 40, height: 40, borderRadius: 10,
-                background: 'var(--green-main)', fontSize: 20, fontWeight: 600,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              }}
-            >
-              +
-            </button>
           </div>
         ) : (
           <button
