@@ -59,7 +59,11 @@ def _notify_admins_new_order(order):
             [telegram.InlineKeyboardButton(
                 text='📦 Открыть магазин',
                 web_app=telegram.WebAppInfo(url=webapp_url),
-            )]
+            )],
+            [telegram.InlineKeyboardButton(
+                text='💬 Чат с клиентом',
+                web_app=telegram.WebAppInfo(url=f'{webapp_url}/admin/chat'),
+            )],
         ])
 
         for admin in admins:
