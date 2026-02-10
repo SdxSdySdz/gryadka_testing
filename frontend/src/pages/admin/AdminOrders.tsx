@@ -16,6 +16,7 @@ export default function AdminOrders() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
+  const [expandedId, setExpandedId] = useState<number | null>(null)
 
   useAppBackButton(useCallback(() => navigate('/profile'), [navigate]))
 
@@ -36,6 +37,8 @@ export default function AdminOrders() {
       loadOrders()
     } catch (e) { console.error(e) }
   }
+
+  const toggle = (id: number) => setExpandedId(expandedId === id ? null : id)
 
   return (
     <div style={{ padding: 16 }}>
@@ -78,67 +81,161 @@ export default function AdminOrders() {
         <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-secondary)' }}>Нет заказов</div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              style={{
-                background: 'var(--white)', borderRadius: 14,
-                padding: 14, boxShadow: 'var(--shadow)',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <div>
-                  <span style={{ fontWeight: 600 }}>#{order.id}</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-secondary)', marginLeft: 8 }}>{order.user_display_name}</span>
-                </div>
-                <span style={{ fontWeight: 700, color: 'var(--green-main)' }}>
-                  {parseFloat(order.total).toFixed(0)} ₽
-                </span>
-              </div>
+          {orders.map((order) => {
+            const expanded = expandedId === order.id
+            const deliveryPrice = parseFloat(order.delivery_price || '0')
+            const urgency = parseFloat(order.urgency_surcharge || '0')
+            const total = parseFloat(order.total)
+            const itemsTotal = total - deliveryPrice - urgency
 
-              {/* Items */}
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                {order.items.map((item) => (
-                  <div key={item.id}>{item.product_name} x{item.quantity}</div>
-                ))}
-              </div>
-
-              {order.delivery_method && (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  📦 {order.delivery_method}
-                  {order.delivery_district && ` · ${order.delivery_district}`}
-                  {order.delivery_interval && ` · ${order.delivery_interval}`}
-                </div>
-              )}
-
-              {order.comment && (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-                  💬 {order.comment}
-                </div>
-              )}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 11, color: 'var(--text-hint)' }}>
-                  {new Date(order.created_at).toLocaleString('ru-RU')}
-                </span>
-                <select
-                  value={order.status}
-                  onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  style={{
-                    padding: '4px 8px', borderRadius: 6,
-                    border: `1px solid ${statusColors[order.status]}`,
-                    fontSize: 12, fontWeight: 600,
-                    color: statusColors[order.status],
-                    background: `${statusColors[order.status]}10`,
-                  }}
+            return (
+              <div
+                key={order.id}
+                style={{
+                  background: 'var(--white)', borderRadius: 14,
+                  padding: 14, boxShadow: 'var(--shadow)',
+                }}
+              >
+                {/* Header — clickable */}
+                <div
+                  onClick={() => toggle(order.id)}
+                  style={{ cursor: 'pointer' }}
                 >
-                  {STATUS_OPTIONS.map((s) => (
-                    <option key={s} value={s}>{STATUS_LABELS[s]}</option>
-                  ))}
-                </select>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontWeight: 600 }}>#{order.id}</span>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{order.user_display_name}</span>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" strokeWidth="2"
+                        style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                    <span style={{ fontWeight: 700, color: 'var(--green-main)' }}>
+                      {total.toFixed(0)} ₽
+                    </span>
+                  </div>
+
+                  {!expanded && (
+                    <>
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                        {order.items.map((item) => item.product_name).join(', ')}
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-hint)' }}>
+                          {new Date(order.created_at).toLocaleString('ru-RU')}
+                        </span>
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {expanded && (
+                  <>
+                    {/* Items */}
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: 'var(--text-secondary)' }}>Товары</div>
+                      {order.items.map((item) => (
+                        <div key={item.id} style={{
+                          display: 'flex', justifyContent: 'space-between',
+                          fontSize: 13, padding: '4px 0',
+                          borderBottom: '1px solid #f5f5f5',
+                        }}>
+                          <span>{item.product_name} x{item.quantity}</span>
+                          <span style={{ fontWeight: 600 }}>{parseFloat(item.subtotal).toFixed(0)} ₽</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Delivery */}
+                    {order.delivery_method && (
+                      <div style={{ marginBottom: 10, fontSize: 13 }}>
+                        <div style={{ fontWeight: 600, marginBottom: 4, color: 'var(--text-secondary)', fontSize: 12 }}>Доставка</div>
+                        <div>🚚 {order.delivery_method}</div>
+                        {order.delivery_district && <div style={{ color: 'var(--text-secondary)' }}>Район: {order.delivery_district}</div>}
+                        {order.delivery_interval && <div style={{ color: 'var(--text-secondary)' }}>Интервал: {order.delivery_interval}</div>}
+                        {order.is_urgent && <div style={{ color: '#FF9800' }}>⚡ Срочная доставка</div>}
+                      </div>
+                    )}
+
+                    {/* Payment */}
+                    {order.payment_method && (
+                      <div style={{ marginBottom: 10, fontSize: 13 }}>
+                        💳 {order.payment_method}
+                      </div>
+                    )}
+
+                    {/* Comment */}
+                    {order.comment && (
+                      <div style={{ marginBottom: 10, fontSize: 13, fontStyle: 'italic', color: 'var(--text-secondary)' }}>
+                        💬 {order.comment}
+                      </div>
+                    )}
+
+                    {/* Price breakdown */}
+                    <div style={{
+                      borderTop: '1px solid #eee', paddingTop: 8, marginBottom: 10,
+                      display: 'flex', flexDirection: 'column', gap: 4, fontSize: 13,
+                    }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Товары:</span>
+                        <span>{itemsTotal.toFixed(0)} ₽</span>
+                      </div>
+                      {deliveryPrice > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Доставка:</span>
+                          <span>{deliveryPrice.toFixed(0)} ₽</span>
+                        </div>
+                      )}
+                      {deliveryPrice === 0 && order.delivery_method && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Доставка:</span>
+                          <span style={{ color: 'var(--green-main)' }}>Бесплатно</span>
+                        </div>
+                      )}
+                      {urgency > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>⚡ Срочность:</span>
+                          <span>{urgency.toFixed(0)} ₽</span>
+                        </div>
+                      )}
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        fontWeight: 700, fontSize: 15, paddingTop: 6,
+                        borderTop: '1px solid #eee',
+                      }}>
+                        <span>Итого:</span>
+                        <span style={{ color: 'var(--green-main)' }}>{total.toFixed(0)} ₽</span>
+                      </div>
+                    </div>
+
+                    {/* Date */}
+                    <div style={{ fontSize: 11, color: 'var(--text-hint)', marginBottom: 10 }}>
+                      {new Date(order.created_at).toLocaleString('ru-RU')}
+                    </div>
+
+                    {/* Status change */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+                      <select
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        style={{
+                          padding: '6px 10px', borderRadius: 8,
+                          border: `1px solid ${statusColors[order.status]}`,
+                          fontSize: 13, fontWeight: 600,
+                          color: statusColors[order.status],
+                          background: `${statusColors[order.status]}10`,
+                        }}
+                      >
+                        {STATUS_OPTIONS.map((s) => (
+                          <option key={s} value={s}>{STATUS_LABELS[s]}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
     </div>
