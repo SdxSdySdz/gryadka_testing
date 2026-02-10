@@ -23,6 +23,8 @@ def public_settings(request):
     settings_obj = ShopSettings.load()
     return Response({
         'min_order_sum': str(settings_obj.min_order_sum),
+        'free_delivery_threshold': str(settings_obj.free_delivery_threshold),
+        'urgency_surcharge': str(settings_obj.urgency_surcharge),
         'payment_methods': PaymentMethodSerializer(
             PaymentMethod.objects.filter(is_active=True), many=True
         ).data,

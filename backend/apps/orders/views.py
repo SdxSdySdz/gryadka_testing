@@ -15,6 +15,7 @@ from apps.orders.serializers import (
 )
 from apps.products.models import Product
 from apps.users.models import User
+from apps.settings_app.models import ShopSettings, DeliveryMethod
 
 logger = logging.getLogger(__name__)
 
@@ -88,11 +89,17 @@ def order_list_create(request):
     serializer.is_valid(raise_exception=True)
     data = serializer.validated_data
 
+    # Calculate delivery cost
+    shop_settings = ShopSettings.load()
+    delivery_method_name = data.get('delivery_method', '')
+    is_urgent = data.get('is_urgent', False)
+
     order = Order.objects.create(
         user=request.tma_user,
-        delivery_method=data.get('delivery_method', ''),
+        delivery_method=delivery_method_name,
         delivery_district=data.get('delivery_district', ''),
         delivery_interval=data.get('delivery_interval', ''),
+        is_urgent=is_urgent,
         payment_method=data.get('payment_method', ''),
         comment=data.get('comment', ''),
         promo_code=data.get('promo_code', ''),
@@ -142,8 +149,24 @@ def order_list_create(request):
         )
         total += price * quantity
 
-    order.total = total
-    order.save(update_fields=['total'])
+    # Calculate delivery price
+    delivery_price = Decimal('0')
+    if total < shop_settings.free_delivery_threshold:
+        try:
+            dm = DeliveryMethod.objects.get(name=delivery_method_name, is_active=True)
+            delivery_price = dm.price
+        except DeliveryMethod.DoesNotExist:
+            pass
+
+    # Calculate urgency surcharge
+    urgency_amount = Decimal('0')
+    if is_urgent and shop_settings.urgency_surcharge > 0:
+        urgency_amount = shop_settings.urgency_surcharge
+
+    order.delivery_price = delivery_price
+    order.urgency_surcharge = urgency_amount
+    order.total = total + delivery_price + urgency_amount
+    order.save(update_fields=['total', 'delivery_price', 'urgency_surcharge'])
 
     # Notify admins via Telegram
     _notify_admins_new_order(order)

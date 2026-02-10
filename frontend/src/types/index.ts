@@ -73,6 +73,9 @@ export interface Order {
   delivery_method: string
   delivery_district: string
   delivery_interval: string
+  delivery_price: string
+  is_urgent: boolean
+  urgency_surcharge: string
   payment_method: string
   comment: string
   promo_code: string
@@ -105,8 +108,10 @@ export interface ChatRoom {
 
 export interface ShopSettings {
   min_order_sum: string
+  free_delivery_threshold: string
+  urgency_surcharge: string
   payment_methods: { id: number; name: string; is_active: boolean; sort_order: number }[]
-  delivery_methods: { id: number; name: string; is_active: boolean; sort_order: number }[]
+  delivery_methods: { id: number; name: string; price: string; is_active: boolean; sort_order: number }[]
   delivery_districts: { id: number; name: string }[]
   delivery_intervals: { id: number; label: string; sort_order: number }[]
 }

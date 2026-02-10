@@ -21,6 +21,10 @@ class Order(models.Model):
     delivery_interval = models.CharField(max_length=100, blank=True, default='')
     payment_method = models.CharField(max_length=100, blank=True, default='')
 
+    delivery_price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_urgent = models.BooleanField(default=False)
+    urgency_surcharge = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     comment = models.TextField(blank=True, default='')
     promo_code = models.CharField(max_length=100, blank=True, default='')
 

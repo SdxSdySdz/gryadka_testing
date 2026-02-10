@@ -7,9 +7,9 @@ export const settingsApi = {
 
   // Admin
   getShopSettings: () =>
-    http.get<{ min_order_sum: string }>('/settings/admin/').then((r) => r.data),
+    http.get<{ min_order_sum: string; free_delivery_threshold: string; urgency_surcharge: string }>('/settings/admin/').then((r) => r.data),
 
-  updateShopSettings: (data: { min_order_sum: number }) =>
+  updateShopSettings: (data: { min_order_sum?: number; free_delivery_threshold?: number; urgency_surcharge?: number }) =>
     http.patch('/settings/admin/', data).then((r) => r.data),
 
   // Payment methods
@@ -25,7 +25,7 @@ export const settingsApi = {
   // Delivery methods
   getDeliveryMethods: () =>
     http.get('/settings/admin/delivery-methods/').then((r) => r.data),
-  createDeliveryMethod: (data: { name: string }) =>
+  createDeliveryMethod: (data: { name: string; price?: number }) =>
     http.post('/settings/admin/delivery-methods/', data).then((r) => r.data),
   updateDeliveryMethod: (id: number, data: any) =>
     http.patch(`/settings/admin/delivery-methods/${id}/`, data).then((r) => r.data),

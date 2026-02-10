@@ -23,10 +23,16 @@ class Command(BaseCommand):
         self.stdout.write(f'Payment methods: {", ".join(defaults)}')
 
         # Delivery methods
-        defaults = ['Курьером', 'Самовывоз']
-        for i, name in enumerate(defaults):
-            DeliveryMethod.objects.get_or_create(name=name, defaults={'sort_order': i})
-        self.stdout.write(f'Delivery methods: {", ".join(defaults)}')
+        delivery_defaults = [
+            {'name': 'До подъезда', 'price': 200, 'sort_order': 0},
+            {'name': 'До двери', 'price': 350, 'sort_order': 1},
+        ]
+        for d in delivery_defaults:
+            DeliveryMethod.objects.get_or_create(
+                name=d['name'],
+                defaults={'price': d['price'], 'sort_order': d['sort_order']},
+            )
+        self.stdout.write(f'Delivery methods: {", ".join(d["name"] for d in delivery_defaults)}')
 
         # Delivery districts
         defaults = ['Район 1', 'Район 2']

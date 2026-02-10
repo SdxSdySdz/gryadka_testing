@@ -12,6 +12,7 @@ export const ordersApi = {
     delivery_method: string
     delivery_district: string
     delivery_interval: string
+    is_urgent?: boolean
     payment_method: string
     comment: string
     promo_code: string

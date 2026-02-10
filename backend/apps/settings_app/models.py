@@ -7,6 +7,14 @@ class ShopSettings(models.Model):
         max_digits=10, decimal_places=2, default=0,
         verbose_name='Минимальная сумма заказа',
     )
+    free_delivery_threshold = models.DecimalField(
+        max_digits=10, decimal_places=2, default=5000,
+        verbose_name='Бесплатная доставка от (₽)',
+    )
+    urgency_surcharge = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name='Наценка за срочность (₽)',
+    )
 
     class Meta:
         db_table = 'shop_settings'
@@ -42,6 +50,10 @@ class PaymentMethod(models.Model):
 
 class DeliveryMethod(models.Model):
     name = models.CharField(max_length=255)
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0,
+        verbose_name='Стоимость доставки (₽)',
+    )
     is_active = models.BooleanField(default=True)
     sort_order = models.IntegerField(default=0)
 
