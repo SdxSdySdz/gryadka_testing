@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 
@@ -125,10 +126,25 @@ def admin_broadcast(request):
         import telegram
         bot = telegram.Bot(token=django_settings.TELEGRAM_BOT_TOKEN)
 
+        domain = os.environ.get('DOMAIN') or (
+            django_settings.ALLOWED_HOSTS[0] if django_settings.ALLOWED_HOSTS else 'localhost'
+        )
+        webapp_url = f'https://{domain}'
+        keyboard = telegram.InlineKeyboardMarkup([
+            [telegram.InlineKeyboardButton(
+                text='\U0001f6d2 Открыть магазин',
+                web_app=telegram.WebAppInfo(url=webapp_url),
+            )]
+        ])
+
         for user in users:
             try:
                 asyncio.get_event_loop().run_until_complete(
-                    bot.send_message(chat_id=user.telegram_id, text=text)
+                    bot.send_message(
+                        chat_id=user.telegram_id,
+                        text=text,
+                        reply_markup=keyboard,
+                    )
                 )
                 sent += 1
             except Exception as e:
