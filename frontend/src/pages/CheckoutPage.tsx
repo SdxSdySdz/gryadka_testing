@@ -48,11 +48,10 @@ export default function CheckoutPage() {
   const actualUrgency = isUrgent ? urgencySurcharge : 0
   const grandTotal = itemsTotal + actualDeliveryPrice + actualUrgency
 
+  const belowMinSum = minSum > 0 && itemsTotal < minSum
+
   const handleSubmit = async () => {
-    if (minSum > 0 && itemsTotal < minSum) {
-      setError(`Минимальная сумма заказа: ${minSum.toFixed(0)} ₽`)
-      return
-    }
+    if (belowMinSum) return
     setSubmitting(true)
     setError('')
     try {
@@ -130,13 +129,18 @@ export default function CheckoutPage() {
             )
           })}
         </div>
-        {isFreeDelivery && (
+        {freeThreshold > 0 && (
           <div style={{
-            background: 'var(--green-bg)', borderRadius: 10,
+            background: isFreeDelivery ? 'var(--green-bg)' : '#f5f5f5',
+            borderRadius: 10,
             padding: '8px 14px', marginTop: 8,
-            color: 'var(--green-main)', fontSize: 13, fontWeight: 500,
+            color: isFreeDelivery ? 'var(--green-main)' : 'var(--text-secondary)',
+            fontSize: 13, fontWeight: 500,
           }}>
-            🎉 Доставка бесплатная при заказе от {freeThreshold.toFixed(0)} ₽
+            {isFreeDelivery
+              ? `🎉 Доставка бесплатная при заказе от ${freeThreshold.toFixed(0)} ₽`
+              : `Бесплатная доставка при заказе от ${freeThreshold.toFixed(0)} ₽ (осталось ${(freeThreshold - itemsTotal).toFixed(0)} ₽)`
+            }
           </div>
         )}
       </div>
@@ -293,16 +297,25 @@ export default function CheckoutPage() {
             {grandTotal.toFixed(0)} ₽
           </span>
         </div>
+        {belowMinSum && (
+          <div style={{
+            background: '#FFF3F0', borderRadius: 10,
+            padding: '8px 14px', marginBottom: 12,
+            color: 'var(--red)', fontSize: 13, fontWeight: 500,
+          }}>
+            Минимальная сумма заказа: {minSum.toFixed(0)} ₽ (не хватает {(minSum - itemsTotal).toFixed(0)} ₽)
+          </div>
+        )}
         <button
           onClick={handleSubmit}
-          disabled={submitting}
+          disabled={submitting || belowMinSum}
           style={{
             width: '100%', padding: '14px 0', borderRadius: 12,
-            background: submitting ? '#ccc' : 'linear-gradient(135deg, var(--green-dark), var(--green-light))',
+            background: (submitting || belowMinSum) ? '#ccc' : 'linear-gradient(135deg, var(--green-dark), var(--green-light))',
             color: 'white', fontSize: 16, fontWeight: 600,
           }}
         >
-          {submitting ? 'Оформляем...' : 'Подтвердить заказ'}
+          {submitting ? 'Оформляем...' : belowMinSum ? `Минимум ${minSum.toFixed(0)} ₽` : 'Подтвердить заказ'}
         </button>
       </div>
     </div>
