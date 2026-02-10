@@ -50,6 +50,8 @@ def _notify_admins_new_order(order):
             f"💳 {order.payment_method or '—'}\n\n"
             f"Товары:\n{items_text}"
         )
+        if order.address:
+            text += f"\n\n📍 {order.address}"
         if order.comment:
             text += f"\n\n💬 {order.comment}"
 
@@ -110,6 +112,7 @@ def order_list_create(request):
         delivery_interval=data.get('delivery_interval', ''),
         is_urgent=is_urgent,
         payment_method=data.get('payment_method', ''),
+        address=data.get('address', ''),
         comment=data.get('comment', ''),
         promo_code=data.get('promo_code', ''),
     )

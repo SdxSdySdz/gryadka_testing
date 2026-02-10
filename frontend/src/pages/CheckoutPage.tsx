@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useCartStore } from '../store/cartStore'
+import { useUserStore } from '../store/userStore'
 import { ordersApi } from '../api/orders'
 import { settingsApi } from '../api/settings'
 import { useAppBackButton } from '../hooks/useAppBackButton'
@@ -9,6 +10,7 @@ import type { ShopSettings } from '../types'
 export default function CheckoutPage() {
   const navigate = useNavigate()
   const { items, totalPrice, clearCart } = useCartStore()
+  const user = useUserStore((s) => s.user)
   const [settings, setSettings] = useState<ShopSettings | null>(null)
   const [deliveryMethodId, setDeliveryMethodId] = useState<number | null>(null)
   const [paymentMethod, setPaymentMethod] = useState('')
@@ -20,7 +22,27 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
 
+  // Address fields
+  const [street, setStreet] = useState('')
+  const [house, setHouse] = useState('')
+  const [entrance, setEntrance] = useState('')
+  const [apartment, setApartment] = useState('')
+  const [floor, setFloor] = useState('')
+  const [intercom, setIntercom] = useState('')
+
   useAppBackButton(useCallback(() => navigate(-1), [navigate]))
+
+  // Auto-fill address from profile
+  useEffect(() => {
+    if (user) {
+      if (user.street) setStreet(user.street)
+      if (user.house) setHouse(user.house)
+      if (user.entrance) setEntrance(user.entrance)
+      if (user.apartment) setApartment(user.apartment)
+      if (user.floor) setFloor(user.floor)
+      if (user.intercom) setIntercom(user.intercom)
+    }
+  }, [user])
 
   useEffect(() => {
     settingsApi.getPublic().then((s) => {
@@ -50,6 +72,18 @@ export default function CheckoutPage() {
 
   const belowMinSum = minSum > 0 && itemsTotal < minSum
 
+  // Build full address string
+  const buildAddress = () => {
+    const parts: string[] = []
+    if (street) parts.push(`ул. ${street}`)
+    if (house) parts.push(`д. ${house}`)
+    if (entrance) parts.push(`подъезд ${entrance}`)
+    if (floor) parts.push(`этаж ${floor}`)
+    if (apartment) parts.push(`кв. ${apartment}`)
+    if (intercom) parts.push(`домофон ${intercom}`)
+    return parts.join(', ')
+  }
+
   const handleSubmit = async () => {
     if (belowMinSum) return
     setSubmitting(true)
@@ -61,6 +95,7 @@ export default function CheckoutPage() {
         delivery_interval: interval,
         is_urgent: isUrgent,
         payment_method: paymentMethod,
+        address: buildAddress(),
         comment,
         promo_code: promoCode,
         items: items.map((i) => ({
@@ -79,19 +114,46 @@ export default function CheckoutPage() {
     }
   }
 
-  const selectStyle = {
+  const selectStyle: React.CSSProperties = {
     width: '100%', padding: '12px', borderRadius: 10,
     border: '1px solid #e0e0e0', fontSize: 14,
     background: 'var(--white)', appearance: 'none' as const,
+    boxSizing: 'border-box',
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 14, fontWeight: 600, marginBottom: 6, display: 'block',
   }
 
   return (
     <div style={{ padding: 16 }}>
       <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>Оформление заказа</h2>
 
+      {/* Address */}
+      <div style={{
+        background: 'var(--white)', borderRadius: 14, padding: 14,
+        boxShadow: 'var(--shadow)', marginBottom: 16,
+      }}>
+        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Адрес доставки</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div>
+            <input style={selectStyle} value={street} onChange={(e) => setStreet(e.target.value)} placeholder="Улица" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <input style={selectStyle} value={house} onChange={(e) => setHouse(e.target.value)} placeholder="Дом" />
+            <input style={selectStyle} value={entrance} onChange={(e) => setEntrance(e.target.value)} placeholder="Подъезд" />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <input style={selectStyle} value={apartment} onChange={(e) => setApartment(e.target.value)} placeholder="Кв." />
+            <input style={selectStyle} value={floor} onChange={(e) => setFloor(e.target.value)} placeholder="Этаж" />
+            <input style={selectStyle} value={intercom} onChange={(e) => setIntercom(e.target.value)} placeholder="Домофон" />
+          </div>
+        </div>
+      </div>
+
       {/* Delivery method — radio-style buttons */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, display: 'block' }}>
+        <label style={labelStyle}>
           Способ доставки
         </label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -147,7 +209,7 @@ export default function CheckoutPage() {
 
       {/* District */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, display: 'block' }}>
+        <label style={labelStyle}>
           Район доставки
         </label>
         <select
@@ -164,7 +226,7 @@ export default function CheckoutPage() {
 
       {/* Interval */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, display: 'block' }}>
+        <label style={labelStyle}>
           Интервал доставки
         </label>
         <select
@@ -208,7 +270,7 @@ export default function CheckoutPage() {
 
       {/* Payment method */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, display: 'block' }}>
+        <label style={labelStyle}>
           Способ оплаты
         </label>
         <select
@@ -224,7 +286,7 @@ export default function CheckoutPage() {
 
       {/* Comment */}
       <div style={{ marginBottom: 16 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, display: 'block' }}>
+        <label style={labelStyle}>
           Комментарий
         </label>
         <textarea
@@ -241,7 +303,7 @@ export default function CheckoutPage() {
 
       {/* Promo code */}
       <div style={{ marginBottom: 20 }}>
-        <label style={{ fontSize: 14, fontWeight: 600, marginBottom: 6, display: 'block' }}>
+        <label style={labelStyle}>
           Промокод
         </label>
         <input

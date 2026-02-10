@@ -174,3 +174,64 @@ def admin_product_image_delete(request, pk):
 
     image.delete()
     return Response(status=204)
+
+
+@api_view(['POST'])
+def admin_category_bulk(request):
+    """Admin: bulk action on categories (activate / deactivate / delete)."""
+    if not request.tma_user.is_admin:
+        return Response({'error': 'Forbidden'}, status=403)
+
+    ids = request.data.get('ids', [])
+    action = request.data.get('action', '')
+
+    if not ids:
+        return Response({'error': 'ids is required'}, status=400)
+
+    qs = Category.objects.filter(id__in=ids)
+
+    if action == 'activate':
+        qs.update(is_active=True)
+    elif action == 'deactivate':
+        qs.update(is_active=False)
+    elif action == 'delete':
+        qs.delete()
+    else:
+        return Response({'error': 'Invalid action'}, status=400)
+
+    return Response({'ok': True})
+
+
+@api_view(['POST'])
+def admin_product_bulk(request):
+    """Admin: bulk action on products (delete / out_of_stock / in_stock / move)."""
+    if not request.tma_user.is_admin:
+        return Response({'error': 'Forbidden'}, status=403)
+
+    ids = request.data.get('ids', [])
+    action = request.data.get('action', '')
+
+    if not ids:
+        return Response({'error': 'ids is required'}, status=400)
+
+    qs = Product.objects.filter(id__in=ids)
+
+    if action == 'delete':
+        qs.delete()
+    elif action == 'out_of_stock':
+        qs.update(in_stock=False)
+    elif action == 'in_stock':
+        qs.update(in_stock=True)
+    elif action == 'move':
+        category_id = request.data.get('category_id')
+        if not category_id:
+            return Response({'error': 'category_id is required for move'}, status=400)
+        try:
+            Category.objects.get(pk=category_id)
+        except Category.DoesNotExist:
+            return Response({'error': 'Category not found'}, status=404)
+        qs.update(category_id=category_id)
+    else:
+        return Response({'error': 'Invalid action'}, status=400)
+
+    return Response({'ok': True})

@@ -124,6 +124,13 @@ export default function OrdersPage() {
                         </div>
                       )}
 
+                      {/* Address */}
+                      {order.address && (
+                        <div style={{ marginBottom: 12, fontSize: 13 }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>📍 </span>{order.address}
+                        </div>
+                      )}
+
                       {/* Payment */}
                       {order.payment_method && (
                         <div style={{ marginBottom: 12, fontSize: 13 }}>

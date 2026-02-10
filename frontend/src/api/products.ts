@@ -27,6 +27,9 @@ export const productsApi = {
 
   adminDeleteImage: (imageId: number) =>
     http.delete(`/products/admin/images/${imageId}/`),
+
+  adminBulk: (ids: number[], action: string, category_id?: number) =>
+    http.post('/products/admin/bulk/', { ids, action, category_id }).then((r) => r.data),
 }
 
 export const categoriesApi = {
@@ -49,4 +52,7 @@ export const categoriesApi = {
 
   adminDelete: (id: number) =>
     http.delete(`/categories/admin/${id}/`),
+
+  adminBulk: (ids: number[], action: string) =>
+    http.post('/categories/admin/bulk/', { ids, action }).then((r) => r.data),
 }

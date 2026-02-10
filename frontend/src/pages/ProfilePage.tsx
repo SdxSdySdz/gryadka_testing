@@ -57,6 +57,30 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* User menu */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
+          <button
+            onClick={() => navigate('/profile/edit')}
+            style={{
+              background: 'var(--white)',
+              borderRadius: 12,
+              padding: '14px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              boxShadow: 'var(--shadow)',
+              textAlign: 'left',
+              width: '100%',
+            }}
+          >
+            <span style={{ fontSize: 20 }}>📝</span>
+            <span style={{ fontSize: 15, fontWeight: 500 }}>Мои данные</span>
+            <svg style={{ marginLeft: 'auto' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" strokeWidth="2">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+
         {/* Admin panel */}
         {user?.is_admin && (
           <div>

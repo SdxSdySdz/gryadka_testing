@@ -157,6 +157,13 @@ export default function AdminOrders() {
                       </div>
                     )}
 
+                    {/* Address */}
+                    {order.address && (
+                      <div style={{ marginBottom: 10, fontSize: 13 }}>
+                        📍 {order.address}
+                      </div>
+                    )}
+
                     {/* Payment */}
                     {order.payment_method && (
                       <div style={{ marginBottom: 10, fontSize: 13 }}>

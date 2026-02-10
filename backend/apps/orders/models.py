@@ -25,6 +25,7 @@ class Order(models.Model):
     is_urgent = models.BooleanField(default=False)
     urgency_surcharge = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    address = models.TextField(blank=True, default='')
     comment = models.TextField(blank=True, default='')
     promo_code = models.CharField(max_length=100, blank=True, default='')
 

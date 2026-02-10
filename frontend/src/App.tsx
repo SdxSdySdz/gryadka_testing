@@ -10,6 +10,7 @@ import CheckoutPage from './pages/CheckoutPage'
 import FavoritesPage from './pages/FavoritesPage'
 import OrdersPage from './pages/OrdersPage'
 import ProfilePage from './pages/ProfilePage'
+import EditProfilePage from './pages/EditProfilePage'
 import ChatPage from './pages/ChatPage'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminCategories from './pages/admin/AdminCategories'
@@ -40,6 +41,7 @@ export default function App() {
           <Route path="/favorites" element={<FavoritesPage />} />
           <Route path="/orders" element={<OrdersPage />} />
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile/edit" element={<EditProfilePage />} />
           <Route path="/chat" element={<ChatPage />} />
           {/* Admin routes */}
           <Route path="/admin" element={<AdminDashboard />} />

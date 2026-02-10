@@ -7,6 +7,13 @@ export interface User {
   photo_url: string
   is_admin: boolean
   display_name: string
+  phone: string
+  street: string
+  house: string
+  entrance: string
+  apartment: string
+  floor: string
+  intercom: string
   created_at: string
 }
 
@@ -77,6 +84,7 @@ export interface Order {
   is_urgent: boolean
   urgency_surcharge: string
   payment_method: string
+  address: string
   comment: string
   promo_code: string
   total: string

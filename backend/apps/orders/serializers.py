@@ -20,7 +20,7 @@ class OrderSerializer(serializers.ModelSerializer):
             'id', 'user', 'user_display_name', 'status',
             'delivery_method', 'delivery_district', 'delivery_interval',
             'delivery_price', 'is_urgent', 'urgency_surcharge',
-            'payment_method', 'comment', 'promo_code',
+            'payment_method', 'address', 'comment', 'promo_code',
             'total', 'items', 'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'user', 'total', 'created_at', 'updated_at']
@@ -32,6 +32,7 @@ class OrderCreateSerializer(serializers.Serializer):
     delivery_interval = serializers.CharField(required=False, default='', allow_blank=True)
     is_urgent = serializers.BooleanField(required=False, default=False)
     payment_method = serializers.CharField(required=False, default='', allow_blank=True)
+    address = serializers.CharField(required=False, default='', allow_blank=True)
     comment = serializers.CharField(required=False, default='', allow_blank=True)
     promo_code = serializers.CharField(required=False, default='', allow_blank=True)
     items = serializers.ListField(child=serializers.DictField(), min_length=1)

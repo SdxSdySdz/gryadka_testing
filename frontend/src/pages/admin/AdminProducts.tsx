@@ -19,6 +19,10 @@ export default function AdminProducts() {
   })
   const [images, setImages] = useState<File[]>([])
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [showMoveModal, setShowMoveModal] = useState(false)
+  const [moveCategoryId, setMoveCategoryId] = useState<number | null>(null)
+
   useAppBackButton(useCallback(() => navigate('/profile'), [navigate]))
 
   useEffect(() => {
@@ -89,9 +93,38 @@ export default function AdminProducts() {
     loadData()
   }
 
-  const inputStyle = {
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleAll = () => {
+    if (selectedIds.size === products.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(products.map((p) => p.id)))
+    }
+  }
+
+  const handleBulk = async (action: string, categoryId?: number) => {
+    if (action === 'delete' && !confirm(`Удалить ${selectedIds.size} товаров?`)) return
+    try {
+      await productsApi.adminBulk(Array.from(selectedIds), action, categoryId)
+      setSelectedIds(new Set())
+      setShowMoveModal(false)
+      loadData()
+    } catch (e) { console.error(e) }
+  }
+
+  const allSelected = products.length > 0 && selectedIds.size === products.length
+
+  const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px', borderRadius: 8,
-    border: '1px solid #e0e0e0', fontSize: 14,
+    border: '1px solid #e0e0e0', fontSize: 14, boxSizing: 'border-box',
   }
 
   return (
@@ -184,6 +217,65 @@ export default function AdminProducts() {
         </div>
       )}
 
+      {/* Select all + bulk actions */}
+      {products.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          marginBottom: 12, flexWrap: 'wrap',
+        }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              style={{ width: 18, height: 18, accentColor: 'var(--green-main)' }}
+            />
+            {selectedIds.size > 0 ? `Выбрано: ${selectedIds.size}` : 'Выбрать все'}
+          </label>
+
+          {selectedIds.size > 0 && (
+            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleBulk('out_of_stock')}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: '#FFF3E0', color: '#FF9800',
+                }}
+              >
+                Нет в наличии
+              </button>
+              <button
+                onClick={() => handleBulk('in_stock')}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: '#E8F5E9', color: '#4CAF50',
+                }}
+              >
+                В наличии
+              </button>
+              <button
+                onClick={() => { setMoveCategoryId(categories[0]?.id || null); setShowMoveModal(true) }}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: '#E3F2FD', color: '#2196F3',
+                }}
+              >
+                Переместить
+              </button>
+              <button
+                onClick={() => handleBulk('delete')}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: '#FFF3F0', color: 'var(--red)',
+                }}
+              >
+                Удалить
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Products list */}
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}>Загрузка...</div>
@@ -193,11 +285,22 @@ export default function AdminProducts() {
             <div
               key={p.id}
               style={{
-                background: 'var(--white)', borderRadius: 12,
+                background: selectedIds.has(p.id) ? 'var(--green-bg)' : 'var(--white)',
+                borderRadius: 12,
                 padding: 12, boxShadow: 'var(--shadow)',
                 display: 'flex', alignItems: 'center', gap: 12,
+                border: selectedIds.has(p.id) ? '1px solid var(--green-main)' : '1px solid transparent',
+                opacity: p.in_stock ? 1 : 0.6,
               }}
             >
+              {/* Checkbox */}
+              <input
+                type="checkbox"
+                checked={selectedIds.has(p.id)}
+                onChange={() => toggleSelect(p.id)}
+                style={{ width: 18, height: 18, accentColor: 'var(--green-main)', flexShrink: 0 }}
+              />
+
               <div style={{
                 width: 50, height: 50, borderRadius: 8, background: '#f0f0f0',
                 flexShrink: 0, overflow: 'hidden',
@@ -228,6 +331,65 @@ export default function AdminProducts() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Move to category modal */}
+      {showMoveModal && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          padding: 16,
+        }}
+          onClick={() => setShowMoveModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--white)', borderRadius: 16,
+              padding: 20, width: '100%', maxWidth: 360,
+              boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            }}
+          >
+            <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 12 }}>
+              Переместить {selectedIds.size} товаров
+            </h3>
+            <select
+              value={moveCategoryId || ''}
+              onChange={(e) => setMoveCategoryId(Number(e.target.value))}
+              style={{
+                width: '100%', padding: '12px', borderRadius: 10,
+                border: '1px solid #e0e0e0', fontSize: 14,
+                boxSizing: 'border-box', marginBottom: 12,
+              }}
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button
+                onClick={() => moveCategoryId && handleBulk('move', moveCategoryId)}
+                style={{
+                  flex: 1, padding: '12px', borderRadius: 10,
+                  background: 'var(--green-main)', color: 'white',
+                  fontSize: 14, fontWeight: 600,
+                }}
+              >
+                Переместить
+              </button>
+              <button
+                onClick={() => setShowMoveModal(false)}
+                style={{
+                  padding: '12px 20px', borderRadius: 10,
+                  background: 'var(--bg)', fontSize: 14,
+                }}
+              >
+                Отмена
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

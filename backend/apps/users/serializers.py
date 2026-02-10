@@ -10,6 +10,8 @@ class UserSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'telegram_id', 'first_name', 'last_name',
             'username', 'photo_url', 'is_admin', 'display_name',
+            'phone', 'street', 'house', 'entrance',
+            'apartment', 'floor', 'intercom',
             'created_at',
         ]
         read_only_fields = ['id', 'telegram_id', 'is_admin', 'created_at']

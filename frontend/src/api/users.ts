@@ -20,4 +20,7 @@ export const usersApi = {
 
   searchClients: (search: string) =>
     http.get<User[]>('/users/admin/clients/', { params: { search } }).then((r) => r.data),
+
+  broadcast: (user_ids: number[], text: string) =>
+    http.post<{ sent: number; failed: number }>('/users/admin/broadcast/', { user_ids, text }).then((r) => r.data),
 }
