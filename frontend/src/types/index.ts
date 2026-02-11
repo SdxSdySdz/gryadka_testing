@@ -100,6 +100,8 @@ export interface ChatMessage {
   sender_name: string
   sender_is_admin: boolean
   text: string
+  image: string | null
+  video: string | null
   is_read: boolean
   created_at: string
 }

@@ -11,15 +11,26 @@ from apps.chat.serializers import ChatRoomSerializer, MessageSerializer
 from apps.users.models import User
 
 
-def _notify_admins_new_message(client_user, text):
+def _notify_admins_new_message(client_user, text, has_image=False, has_video=False):
     """Send Telegram notification to all admins about a new chat message."""
     try:
         import telegram
         bot = telegram.Bot(token=settings.TELEGRAM_BOT_TOKEN)
         admins = User.objects.filter(is_admin=True)
+
+        # Build preview text
+        if text:
+            preview = text[:200]
+        elif has_image:
+            preview = '📷 Фото'
+        elif has_video:
+            preview = '🎬 Видео'
+        else:
+            preview = ''
+
         message_text = (
             f"💬 Новое сообщение от {client_user.display_name}:\n\n"
-            f"{text[:200]}"
+            f"{preview}"
         )
         for admin in admins:
             try:
@@ -50,16 +61,19 @@ def client_messages(request):
         except (ValueError, TypeError):
             pass
 
-    serializer = MessageSerializer(qs, many=True)
+    serializer = MessageSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 
 @api_view(['POST'])
 def client_send_message(request):
-    """Client: send a message to support."""
+    """Client: send a message to support (text, image, or video)."""
     text = request.data.get('text', '').strip()
-    if not text:
-        return Response({'error': 'Text required'}, status=400)
+    image = request.FILES.get('image')
+    video = request.FILES.get('video')
+
+    if not text and not image and not video:
+        return Response({'error': 'Text, image or video required'}, status=400)
 
     room, _ = ChatRoom.objects.get_or_create(client=request.tma_user)
 
@@ -67,13 +81,15 @@ def client_send_message(request):
         room=room,
         sender=request.tma_user,
         text=text,
+        image=image,
+        video=video,
     )
     room.save()  # update updated_at
 
     # Notify admins
-    _notify_admins_new_message(request.tma_user, text)
+    _notify_admins_new_message(request.tma_user, text, has_image=bool(image), has_video=bool(video))
 
-    return Response(MessageSerializer(message).data, status=201)
+    return Response(MessageSerializer(message, context={'request': request}).data, status=201)
 
 
 # ─── Admin endpoints ───────────────────────────────────────
@@ -85,7 +101,7 @@ def admin_chat_rooms(request):
         return Response({'error': 'Forbidden'}, status=403)
 
     rooms = ChatRoom.objects.select_related('client').prefetch_related('messages').all()
-    serializer = ChatRoomSerializer(rooms, many=True)
+    serializer = ChatRoomSerializer(rooms, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -113,7 +129,7 @@ def admin_room_messages(request, room_id):
     # Mark client messages as read
     room.messages.filter(sender=room.client, is_read=False).update(is_read=True)
 
-    serializer = MessageSerializer(qs, many=True)
+    serializer = MessageSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -129,14 +145,19 @@ def admin_send_message(request, room_id):
         return Response({'error': 'Room not found'}, status=404)
 
     text = request.data.get('text', '').strip()
-    if not text:
-        return Response({'error': 'Text required'}, status=400)
+    image = request.FILES.get('image')
+    video = request.FILES.get('video')
+
+    if not text and not image and not video:
+        return Response({'error': 'Text, image or video required'}, status=400)
 
     message = Message.objects.create(
         room=room,
         sender=request.tma_user,
         text=text,
+        image=image,
+        video=video,
     )
     room.save()  # update updated_at
 
-    return Response(MessageSerializer(message).data, status=201)
+    return Response(MessageSerializer(message, context={'request': request}).data, status=201)
