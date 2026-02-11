@@ -399,6 +399,24 @@ export default function AdminCategoryProducts() {
 
           {selectedIds.size > 0 && (
             <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleBulk('out_of_stock')}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: '#FFF3E0', color: '#FF9800',
+                }}
+              >
+                Нет в наличии
+              </button>
+              <button
+                onClick={() => handleBulk('in_stock')}
+                style={{
+                  padding: '6px 12px', borderRadius: 8, fontSize: 12, fontWeight: 600,
+                  background: '#E8F5E9', color: '#4CAF50',
+                }}
+              >
+                В наличии
+              </button>
               {otherCategories.length > 0 && (
                 <button
                   onClick={() => { setMoveCategoryId(otherCategories[0]?.id || null); setShowMoveModal(true) }}
