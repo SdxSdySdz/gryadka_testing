@@ -129,7 +129,7 @@ def admin_broadcast(request):
         domain = os.environ.get('DOMAIN') or (
             django_settings.ALLOWED_HOSTS[0] if django_settings.ALLOWED_HOSTS else 'localhost'
         )
-        webapp_url = f'https://{domain}'
+        webapp_url = f'https://{domain}?v=2'
         keyboard = telegram.InlineKeyboardMarkup([
             [telegram.InlineKeyboardButton(
                 text='\U0001f6d2 Открыть магазин',

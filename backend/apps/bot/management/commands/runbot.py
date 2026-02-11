@@ -33,7 +33,7 @@ class Command(BaseCommand):
         user, created = await sync_to_async(UserService.update_or_create_from_bot)(tg_user)
 
         domain = os.environ.get('DOMAIN') or (settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost')
-        webapp_url = f'https://{domain}'
+        webapp_url = f'https://{domain}?v=2'
 
         keyboard = InlineKeyboardMarkup([
             [InlineKeyboardButton(

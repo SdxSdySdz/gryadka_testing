@@ -52,7 +52,7 @@ def _handle_message(bot, update):
 def _handle_start(bot, message, user):
     """Handle /start command."""
     domain = os.environ.get('DOMAIN') or (settings.ALLOWED_HOSTS[0] if settings.ALLOWED_HOSTS else 'localhost')
-    webapp_url = f'https://{domain}'
+    webapp_url = f'https://{domain}?v=2'
 
     keyboard = InlineKeyboardMarkup([
         [InlineKeyboardButton(
