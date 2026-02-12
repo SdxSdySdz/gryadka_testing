@@ -61,9 +61,10 @@ def compress_existing_file(image_field):
         image_field.close()
         return False
 
-    # Build new filename
+    # Build new filename (basename only — Django's upload_to adds directory)
     old_name = image_field.name
-    name_without_ext = old_name.rsplit('.', 1)[0] if '.' in old_name else old_name
+    basename = os.path.basename(old_name)
+    name_without_ext = basename.rsplit('.', 1)[0] if '.' in basename else basename
     new_name = f'{name_without_ext}.jpg'
 
     # Delete old file and save new
