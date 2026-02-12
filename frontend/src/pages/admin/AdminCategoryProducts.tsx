@@ -29,7 +29,9 @@ export default function AdminCategoryProducts() {
     price_per_kg: '', price_per_unit: '', price_per_pack: '', price_per_box: '',
     price_per_100g: '', available_grams: '',
     box_weight: '', pack_weight: '',
-    old_price: '', tag: '', in_stock: true,
+    old_price_per_kg: '', old_price_per_unit: '', old_price_per_pack: '',
+    old_price_per_box: '', old_price_per_100g: '',
+    tag: '', in_stock: true,
   })
   const [gramsList, setGramsList] = useState<number[]>([])
   const [newGramValue, setNewGramValue] = useState('')
@@ -79,7 +81,9 @@ export default function AdminCategoryProducts() {
       price_per_kg: '', price_per_unit: '', price_per_pack: '', price_per_box: '',
       price_per_100g: '', available_grams: '',
       box_weight: '', pack_weight: '',
-      old_price: '', tag: '', in_stock: true,
+      old_price_per_kg: '', old_price_per_unit: '', old_price_per_pack: '',
+      old_price_per_box: '', old_price_per_100g: '',
+      tag: '', in_stock: true,
     })
     setGramsList([])
     setNewGramValue('')
@@ -101,7 +105,11 @@ export default function AdminCategoryProducts() {
       available_grams: grams.join(','),
       box_weight: p.box_weight != null ? String(p.box_weight) : '',
       pack_weight: p.pack_weight != null ? String(p.pack_weight) : '',
-      old_price: p.old_price || '',
+      old_price_per_kg: p.old_price_per_kg || '',
+      old_price_per_unit: p.old_price_per_unit || '',
+      old_price_per_pack: p.old_price_per_pack || '',
+      old_price_per_box: p.old_price_per_box || '',
+      old_price_per_100g: p.old_price_per_100g || '',
       tag: p.tag,
       in_stock: p.in_stock,
     })
@@ -124,7 +132,11 @@ export default function AdminCategoryProducts() {
     fd.append('available_grams', gramsList.join(','))
     if (form.box_weight) fd.append('box_weight', form.box_weight)
     if (form.pack_weight) fd.append('pack_weight', form.pack_weight)
-    if (form.old_price) fd.append('old_price', form.old_price)
+    if (form.old_price_per_kg) fd.append('old_price_per_kg', form.old_price_per_kg)
+    if (form.old_price_per_unit) fd.append('old_price_per_unit', form.old_price_per_unit)
+    if (form.old_price_per_pack) fd.append('old_price_per_pack', form.old_price_per_pack)
+    if (form.old_price_per_box) fd.append('old_price_per_box', form.old_price_per_box)
+    if (form.old_price_per_100g) fd.append('old_price_per_100g', form.old_price_per_100g)
     fd.append('tag', form.tag)
     fd.append('in_stock', String(form.in_stock))
     images.forEach((img) => fd.append('images', img))
@@ -198,7 +210,7 @@ export default function AdminCategoryProducts() {
       parts.push(`${parseFloat(p.price_per_pack).toFixed(0)} ₽/уп${w}`)
     }
     if (p.price_per_box) {
-      const w = p.box_weight ? ` (${formatWeight(p.box_weight)})` : ''
+      const w = p.box_weight ? ` (${p.box_weight} кг)` : ''
       parts.push(`${parseFloat(p.price_per_box).toFixed(0)} ₽/ящ${w}`)
     }
     if (p.price_per_unit) parts.push(`${parseFloat(p.price_per_unit).toFixed(0)} ₽/шт`)
@@ -243,13 +255,20 @@ export default function AdminCategoryProducts() {
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)' }}>Цены (заполните хотя бы одну)</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <input style={inputStyle} placeholder="Цена за кг" type="number" step="0.01" value={form.price_per_kg} onChange={(e) => setForm({ ...form, price_per_kg: e.target.value })} />
+              <input style={inputStyle} placeholder="Старая цена за кг" type="number" step="0.01" value={form.old_price_per_kg} onChange={(e) => setForm({ ...form, old_price_per_kg: e.target.value })} />
               <input style={inputStyle} placeholder="Цена за шт" type="number" step="0.01" value={form.price_per_unit} onChange={(e) => setForm({ ...form, price_per_unit: e.target.value })} />
+              <input style={inputStyle} placeholder="Старая цена за шт" type="number" step="0.01" value={form.old_price_per_unit} onChange={(e) => setForm({ ...form, old_price_per_unit: e.target.value })} />
               <input style={inputStyle} placeholder="Цена за уп" type="number" step="0.01" value={form.price_per_pack} onChange={(e) => setForm({ ...form, price_per_pack: e.target.value })} />
+              <input style={inputStyle} placeholder="Старая цена за уп" type="number" step="0.01" value={form.old_price_per_pack} onChange={(e) => setForm({ ...form, old_price_per_pack: e.target.value })} />
               <input style={inputStyle} placeholder="Цена за ящик" type="number" step="0.01" value={form.price_per_box} onChange={(e) => setForm({ ...form, price_per_box: e.target.value })} />
+              <input style={inputStyle} placeholder="Старая цена за ящик" type="number" step="0.01" value={form.old_price_per_box} onChange={(e) => setForm({ ...form, old_price_per_box: e.target.value })} />
             </div>
 
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Граммовки</div>
-            <input style={inputStyle} placeholder="Цена за 100г" type="number" step="0.01" value={form.price_per_100g} onChange={(e) => setForm({ ...form, price_per_100g: e.target.value })} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <input style={inputStyle} placeholder="Цена за 100г" type="number" step="0.01" value={form.price_per_100g} onChange={(e) => setForm({ ...form, price_per_100g: e.target.value })} />
+              <input style={inputStyle} placeholder="Старая цена за 100г" type="number" step="0.01" value={form.old_price_per_100g} onChange={(e) => setForm({ ...form, old_price_per_100g: e.target.value })} />
+            </div>
 
             {/* Grammage chips + add */}
             <div>
@@ -331,10 +350,8 @@ export default function AdminCategoryProducts() {
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Масса упаковки / коробки (в граммах)</div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               <input style={inputStyle} placeholder="Масса упаковки (г)" type="number" value={form.pack_weight} onChange={(e) => setForm({ ...form, pack_weight: e.target.value })} />
-              <input style={inputStyle} placeholder="Масса коробки (г)" type="number" value={form.box_weight} onChange={(e) => setForm({ ...form, box_weight: e.target.value })} />
+              <input style={inputStyle} placeholder="Масса коробки (кг)" type="number" value={form.box_weight} onChange={(e) => setForm({ ...form, box_weight: e.target.value })} />
             </div>
-
-            <input style={inputStyle} placeholder="Старая цена (для акций)" type="number" step="0.01" value={form.old_price} onChange={(e) => setForm({ ...form, old_price: e.target.value })} />
 
             <select style={inputStyle} value={form.tag} onChange={(e) => setForm({ ...form, tag: e.target.value })}>
               <option value="">Без метки</option>

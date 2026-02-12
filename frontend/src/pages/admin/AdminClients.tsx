@@ -12,6 +12,7 @@ export default function AdminClients() {
   const [initialLoaded, setInitialLoaded] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  const [expandedId, setExpandedId] = useState<number | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [showBroadcast, setShowBroadcast] = useState(false)
   const [broadcastText, setBroadcastText] = useState('')
@@ -60,6 +61,8 @@ export default function AdminClients() {
       setSelectedIds(new Set(clients.map((c) => c.id)))
     }
   }
+
+  const toggleExpand = (id: number) => setExpandedId(expandedId === id ? null : id)
 
   const handleBroadcast = async () => {
     if (!broadcastText.trim()) return
@@ -141,68 +144,168 @@ export default function AdminClients() {
               Поиск...
             </div>
           )}
-          {clients.map((client) => (
-            <div
-              key={client.id}
-              onClick={() => toggleSelect(client.id)}
-              style={{
-                background: selectedIds.has(client.id) ? 'var(--green-bg)' : 'var(--white)',
-                borderRadius: 12,
-                padding: '12px 14px', boxShadow: 'var(--shadow)',
-                display: 'flex', alignItems: 'center', gap: 12,
-                cursor: 'pointer',
-                border: selectedIds.has(client.id) ? '1px solid var(--green-main)' : '1px solid transparent',
-              }}
-            >
-              {/* Checkbox */}
-              <input
-                type="checkbox"
-                checked={selectedIds.has(client.id)}
-                onChange={() => toggleSelect(client.id)}
-                onClick={(e) => e.stopPropagation()}
-                style={{ width: 18, height: 18, accentColor: 'var(--green-main)', flexShrink: 0 }}
-              />
+          {clients.map((client) => {
+            const expanded = expandedId === client.id
+            const selected = selectedIds.has(client.id)
+            const hasAddress = client.street || client.house
 
-              {/* Avatar */}
-              <div style={{
-                width: 44, height: 44, borderRadius: '50%',
-                background: client.is_admin
-                  ? 'linear-gradient(135deg, var(--green-dark), var(--green-light))'
-                  : '#e0e0e0',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: client.is_admin ? 'white' : '#666',
-                fontWeight: 700, fontSize: 16, flexShrink: 0,
-              }}>
-                {client.first_name?.[0] || '?'}
-              </div>
+            return (
+              <div
+                key={client.id}
+                style={{
+                  background: selected ? 'var(--green-bg)' : 'var(--white)',
+                  borderRadius: 12,
+                  padding: '12px 14px', boxShadow: 'var(--shadow)',
+                  border: selected ? '1px solid var(--green-main)' : '1px solid transparent',
+                }}
+              >
+                {/* Header — clickable to expand */}
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }}
+                >
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleSelect(client.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ width: 18, height: 18, accentColor: 'var(--green-main)', flexShrink: 0 }}
+                  />
 
-              {/* Info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>
-                  {client.display_name}
-                  {client.is_admin && (
-                    <span style={{
-                      fontSize: 10, fontWeight: 600,
-                      color: 'var(--green-main)', background: 'var(--green-bg)',
-                      padding: '1px 6px', borderRadius: 4, marginLeft: 6,
-                    }}>
-                      Админ
-                    </span>
-                  )}
+                  {/* Avatar */}
+                  <div
+                    onClick={() => toggleExpand(client.id)}
+                    style={{
+                      width: 44, height: 44, borderRadius: '50%',
+                      background: client.is_admin
+                        ? 'linear-gradient(135deg, var(--green-dark), var(--green-light))'
+                        : '#e0e0e0',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: client.is_admin ? 'white' : '#666',
+                      fontWeight: 700, fontSize: 16, flexShrink: 0,
+                    }}
+                  >
+                    {client.first_name?.[0] || '?'}
+                  </div>
+
+                  {/* Info */}
+                  <div style={{ flex: 1, minWidth: 0 }} onClick={() => toggleExpand(client.id)}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 14, fontWeight: 500 }}>
+                        {client.display_name}
+                      </span>
+                      {client.is_admin && (
+                        <span style={{
+                          fontSize: 10, fontWeight: 600,
+                          color: 'var(--green-main)', background: 'var(--green-bg)',
+                          padding: '1px 6px', borderRadius: 4,
+                        }}>
+                          Админ
+                        </span>
+                      )}
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" strokeWidth="2"
+                        style={{ marginLeft: 'auto', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}>
+                        <polyline points="6 9 12 15 18 9"/>
+                      </svg>
+                    </div>
+                    {!expanded && (
+                      <>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                          ID: {client.telegram_id}
+                          {client.username && ` \u00B7 @${client.username}`}
+                          {client.phone && ` \u00B7 ${client.phone}`}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text-hint)' }}>
+                          {new Date(client.created_at).toLocaleDateString('ru-RU', {
+                            day: 'numeric', month: 'short', year: 'numeric',
+                          })}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  ID: {client.telegram_id}
-                  {client.username && ` \u00B7 @${client.username}`}
-                  {client.phone && ` \u00B7 ${client.phone}`}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-hint)' }}>
-                  {new Date(client.created_at).toLocaleDateString('ru-RU', {
-                    day: 'numeric', month: 'short', year: 'numeric',
-                  })}
-                </div>
+
+                {/* Expanded details */}
+                {expanded && (
+                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #eee' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Telegram ID</span>
+                        <span style={{ fontWeight: 500 }}>{client.telegram_id}</span>
+                      </div>
+                      {client.username && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Username</span>
+                          <span style={{ fontWeight: 500 }}>@{client.username}</span>
+                        </div>
+                      )}
+                      {client.phone && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ color: 'var(--text-secondary)' }}>Телефон</span>
+                          <span style={{ fontWeight: 500 }}>{client.phone}</span>
+                        </div>
+                      )}
+
+                      {hasAddress && (
+                        <>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginTop: 4 }}>Адрес</div>
+                          {client.street && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Улица</span>
+                              <span style={{ fontWeight: 500 }}>{client.street}</span>
+                            </div>
+                          )}
+                          {client.house && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Дом</span>
+                              <span style={{ fontWeight: 500 }}>{client.house}</span>
+                            </div>
+                          )}
+                          {client.entrance && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Подъезд</span>
+                              <span style={{ fontWeight: 500 }}>{client.entrance}</span>
+                            </div>
+                          )}
+                          {client.apartment && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Квартира</span>
+                              <span style={{ fontWeight: 500 }}>{client.apartment}</span>
+                            </div>
+                          )}
+                          {client.floor && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Этаж</span>
+                              <span style={{ fontWeight: 500 }}>{client.floor}</span>
+                            </div>
+                          )}
+                          {client.intercom && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                              <span style={{ color: 'var(--text-secondary)' }}>Домофон</span>
+                              <span style={{ fontWeight: 500 }}>{client.intercom}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      <div style={{
+                        display: 'flex', justifyContent: 'space-between',
+                        paddingTop: 8, borderTop: '1px solid #f5f5f5',
+                      }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>Регистрация</span>
+                        <span style={{ fontWeight: 500 }}>
+                          {new Date(client.created_at).toLocaleString('ru-RU', {
+                            day: 'numeric', month: 'long', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

@@ -11,25 +11,25 @@ interface Props {
  * Get the primary price label for the product card.
  * Priority: kg > 100g > pack > box > unit.
  */
-function getCardPriceLabel(product: Product): { price: string; unit: string } {
+function getCardPriceLabel(product: Product): { price: string; unit: string; oldPrice: string | null } {
   if (product.price_per_kg) {
-    return { price: product.price_per_kg, unit: 'р/кг' }
+    return { price: product.price_per_kg, unit: 'р/кг', oldPrice: product.old_price_per_kg }
   }
   if (product.price_per_100g) {
-    return { price: product.price_per_100g, unit: 'р/100г' }
+    return { price: product.price_per_100g, unit: 'р/100г', oldPrice: product.old_price_per_100g }
   }
   if (product.price_per_unit) {
-    return { price: product.price_per_unit, unit: 'р/шт' }
+    return { price: product.price_per_unit, unit: 'р/шт', oldPrice: product.old_price_per_unit }
   }
   if (product.price_per_pack) {
     const w = product.pack_weight ? ` (${formatWeight(product.pack_weight)})` : ''
-    return { price: product.price_per_pack, unit: `р/уп${w}` }
+    return { price: product.price_per_pack, unit: `р/уп${w}`, oldPrice: product.old_price_per_pack }
   }
   if (product.price_per_box) {
-    const w = product.box_weight ? ` (${formatWeight(product.box_weight)})` : ''
-    return { price: product.price_per_box, unit: `р/ящ${w}` }
+    const w = product.box_weight ? ` (${product.box_weight} кг)` : ''
+    return { price: product.price_per_box, unit: `р/ящ${w}`, oldPrice: product.old_price_per_box }
   }
-  return { price: '0', unit: '' }
+  return { price: '0', unit: '', oldPrice: null }
 }
 
 export default function ProductCard({ product }: Props) {
@@ -37,7 +37,7 @@ export default function ProductCard({ product }: Props) {
   const { toggle, isFavorite } = useFavoritesStore()
   const fav = isFavorite(product.id)
 
-  const { price, unit } = getCardPriceLabel(product)
+  const { price, unit, oldPrice } = getCardPriceLabel(product)
 
   const tagColor = product.tag === 'sale' ? 'var(--red)' : product.tag === 'hit' ? '#FFC107' : 'var(--green-main)'
 
@@ -127,12 +127,12 @@ export default function ProductCard({ product }: Props) {
           <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--green-main)' }}>
             {parseFloat(price).toFixed(0)} ₽
           </span>
-          {product.old_price && (
+          {oldPrice && parseFloat(oldPrice) > 0 && (
             <span style={{
               fontSize: 12, color: 'var(--text-secondary)',
               textDecoration: 'line-through',
             }}>
-              {parseFloat(product.old_price).toFixed(0)} ₽
+              {parseFloat(oldPrice).toFixed(0)} ₽
             </span>
           )}
           <span style={{ fontSize: 11, color: 'var(--text-secondary)' }}>/{unit.replace('р/', '')}</span>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { productsApi } from '../api/products'
 import { useCartStore } from '../store/cartStore'
@@ -24,9 +24,6 @@ function buildPriceOptions(product: Product) {
   if (product.price_per_kg) {
     opts.push({ type: 'kg', label: 'за кг', value: product.price_per_kg })
   }
-  if (product.price_per_100g) {
-    opts.push({ type: 'gram', label: 'за 100г', value: product.price_per_100g })
-  }
   if (product.price_per_unit) {
     opts.push({ type: 'unit', label: 'за шт', value: product.price_per_unit })
   }
@@ -35,7 +32,7 @@ function buildPriceOptions(product: Product) {
     opts.push({ type: 'pack', label: `за уп${w}`, value: product.price_per_pack })
   }
   if (product.price_per_box) {
-    const w = product.box_weight ? ` (${formatWeight(product.box_weight)})` : ''
+    const w = product.box_weight ? ` (${product.box_weight} кг)` : ''
     opts.push({ type: 'box', label: `за ящ${w}`, value: product.price_per_box })
   }
   return opts
@@ -56,6 +53,29 @@ export default function ProductPage() {
   const { toggle, isFavorite } = useFavoritesStore()
   const user = useUserStore((s) => s.user)
 
+  // Touch swipe support for image gallery
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX
+  }
+  const handleTouchEnd = () => {
+    if (!product?.images || product.images.length <= 1) return
+    const delta = touchStartX.current - touchEndX.current
+    const threshold = 50
+    if (delta > threshold) {
+      // Swipe left — next image
+      setSelectedImage((prev) => (prev < product.images!.length - 1 ? prev + 1 : prev))
+    } else if (delta < -threshold) {
+      // Swipe right — previous image
+      setSelectedImage((prev) => (prev > 0 ? prev - 1 : prev))
+    }
+  }
+
   useAppBackButton(useCallback(() => navigate(-1), [navigate]))
 
   useEffect(() => {
@@ -66,11 +86,11 @@ export default function ProductPage() {
       const opts = buildPriceOptions(data)
       if (opts.length > 0) {
         setSelectedPrice(opts[0].type)
-        // If first option is gram, select first available grammage
-        if (opts[0].type === 'gram') {
-          const grams = parseAvailableGrams(data.available_grams)
-          if (grams.length > 0) setSelectedGrams(grams[0])
-        }
+      } else if (data.price_per_100g) {
+        // Only gram pricing available — auto-select gram
+        setSelectedPrice('gram')
+        const grams = parseAvailableGrams(data.available_grams)
+        if (grams.length > 0) setSelectedGrams(grams[0])
       }
     }).catch(console.error).finally(() => setLoading(false))
   }, [id])
@@ -96,6 +116,17 @@ export default function ProductPage() {
 
   const currentLabel = priceOptions.find((o) => o.type === selectedPrice)?.label || ''
 
+  // Calculate current old price based on selected price type
+  let currentOldPrice: string | null = null
+  if (selectedPrice === 'kg') currentOldPrice = product.old_price_per_kg
+  else if (selectedPrice === 'gram' && product.old_price_per_100g && selectedGrams > 0) {
+    currentOldPrice = (parseFloat(product.old_price_per_100g) * selectedGrams / 100).toFixed(0)
+  }
+  else if (selectedPrice === 'unit') currentOldPrice = product.old_price_per_unit
+  else if (selectedPrice === 'pack') currentOldPrice = product.old_price_per_pack
+  else if (selectedPrice === 'box') currentOldPrice = product.old_price_per_box
+  const showOldPrice = currentOldPrice && parseFloat(currentOldPrice) > 0
+
   const fav = isFavorite(product.id)
   const tagColor = product.tag === 'sale' ? 'var(--red)' : product.tag === 'hit' ? '#FFC107' : 'var(--green-main)'
 
@@ -118,7 +149,12 @@ export default function ProductPage() {
   return (
     <div style={{ background: 'var(--white)', minHeight: '100vh' }}>
       {/* Image gallery */}
-      <div style={{ position: 'relative', height: 300, background: '#f0f0f0' }}>
+      <div
+        style={{ position: 'relative', height: 300, background: '#f0f0f0' }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
         {product.images && product.images.length > 0 ? (
           <img
             src={product.images[selectedImage]?.image}
@@ -186,57 +222,64 @@ export default function ProductPage() {
         </p>
 
         {/* Price type selector */}
-        {priceOptions.length > 1 && (
+        {priceOptions.length > 0 && (
           <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-            {priceOptions.map((opt) => (
-              <button
-                key={opt.type}
-                onClick={() => {
-                  setSelectedPrice(opt.type)
-                  if (opt.type === 'gram' && availableGrams.length > 0 && selectedGrams === 0) {
-                    setSelectedGrams(availableGrams[0])
-                  }
-                }}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 10,
-                  fontSize: 13,
-                  fontWeight: selectedPrice === opt.type ? 600 : 400,
-                  background: selectedPrice === opt.type ? 'var(--green-bg)' : 'var(--bg)',
-                  color: selectedPrice === opt.type ? 'var(--green-main)' : 'var(--text-secondary)',
-                  border: selectedPrice === opt.type ? '1px solid var(--green-main)' : '1px solid transparent',
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Gram selector — shown when 'gram' price type is selected */}
-        {selectedPrice === 'gram' && availableGrams.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-              Выберите граммовку:
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {availableGrams.map((g) => (
+            {priceOptions.map((opt) => {
+              const isActive = selectedPrice === opt.type
+              return (
                 <button
-                  key={g}
-                  onClick={() => setSelectedGrams(g)}
+                  key={opt.type}
+                  onClick={() => {
+                    setSelectedPrice(opt.type)
+                    setSelectedGrams(0)
+                  }}
                   style={{
                     padding: '8px 16px',
                     borderRadius: 10,
                     fontSize: 13,
-                    fontWeight: selectedGrams === g ? 600 : 400,
-                    background: selectedGrams === g ? 'var(--green-bg)' : 'var(--bg)',
-                    color: selectedGrams === g ? 'var(--green-main)' : 'var(--text-secondary)',
-                    border: selectedGrams === g ? '1px solid var(--green-main)' : '1px solid transparent',
+                    fontWeight: isActive ? 600 : 400,
+                    background: isActive ? 'var(--green-bg)' : 'var(--bg)',
+                    color: isActive ? 'var(--green-main)' : 'var(--text-secondary)',
+                    border: isActive ? '1px solid var(--green-main)' : '1px solid transparent',
                   }}
                 >
-                  {formatWeight(g)}
+                  {opt.label}
                 </button>
-              ))}
+              )
+            })}
+          </div>
+        )}
+
+        {/* Gram selector — always shown when gram pricing and grammages exist */}
+        {product.price_per_100g && availableGrams.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
+              {priceOptions.length > 0 ? 'Или выберите граммовку' : 'Выберите граммовку'}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {availableGrams.map((g) => {
+                const isActive = selectedPrice === 'gram' && selectedGrams === g
+                return (
+                  <button
+                    key={g}
+                    onClick={() => {
+                      setSelectedPrice('gram')
+                      setSelectedGrams(g)
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: 10,
+                      fontSize: 13,
+                      fontWeight: isActive ? 600 : 400,
+                      background: isActive ? 'var(--green-bg)' : 'var(--bg)',
+                      color: isActive ? 'var(--green-main)' : 'var(--text-secondary)',
+                      border: isActive ? '1px solid var(--green-main)' : '1px solid transparent',
+                    }}
+                  >
+                    {formatWeight(g)}
+                  </button>
+                )
+              })}
             </div>
           </div>
         )}
@@ -246,9 +289,9 @@ export default function ProductPage() {
           <span style={{ fontSize: 28, fontWeight: 700, color: 'var(--green-main)' }}>
             {parseFloat(currentPrice).toFixed(0)} ₽
           </span>
-          {product.old_price && (
+          {showOldPrice && (
             <span style={{ fontSize: 16, color: 'var(--text-secondary)', textDecoration: 'line-through' }}>
-              {parseFloat(product.old_price).toFixed(0)} ₽
+              {parseFloat(currentOldPrice!).toFixed(0)} ₽
             </span>
           )}
           <span style={{ fontSize: 14, color: 'var(--text-secondary)' }}>

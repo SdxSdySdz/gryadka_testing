@@ -65,8 +65,20 @@ class Product(models.Model):
         help_text='Доступные граммовки через запятую (напр. 250,300,500)',
     )
 
-    # Old price for sales display
-    old_price = models.DecimalField(
+    # Old prices for sales display (per price type)
+    old_price_per_kg = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+    )
+    old_price_per_box = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+    )
+    old_price_per_pack = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+    )
+    old_price_per_unit = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+    )
+    old_price_per_100g = models.DecimalField(
         max_digits=10, decimal_places=2, null=True, blank=True,
     )
 

@@ -28,7 +28,9 @@ class ProductListSerializer(serializers.ModelSerializer):
             'price_per_kg', 'price_per_unit', 'price_per_pack', 'price_per_box',
             'price_per_100g', 'available_grams',
             'box_weight', 'pack_weight',
-            'old_price', 'tag', 'in_stock', 'main_image',
+            'old_price_per_kg', 'old_price_per_box', 'old_price_per_pack',
+            'old_price_per_unit', 'old_price_per_100g',
+            'tag', 'in_stock', 'main_image',
         ]
 
     def get_main_image(self, obj):
@@ -53,7 +55,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'price_per_kg', 'price_per_unit', 'price_per_pack', 'price_per_box',
             'price_per_100g', 'available_grams',
             'box_weight', 'pack_weight',
-            'old_price', 'tag', 'in_stock', 'images', 'created_at',
+            'old_price_per_kg', 'old_price_per_box', 'old_price_per_pack',
+            'old_price_per_unit', 'old_price_per_100g',
+            'tag', 'in_stock', 'images', 'created_at',
         ]
 
 
@@ -66,5 +70,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'price_per_kg', 'price_per_unit', 'price_per_pack', 'price_per_box',
             'price_per_100g', 'available_grams',
             'box_weight', 'pack_weight',
-            'old_price', 'tag', 'in_stock',
+            'old_price_per_kg', 'old_price_per_box', 'old_price_per_pack',
+            'old_price_per_unit', 'old_price_per_100g',
+            'tag', 'in_stock',
         ]

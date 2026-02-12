@@ -45,7 +45,11 @@ export interface Product {
   available_grams: string
   box_weight: number | null
   pack_weight: number | null
-  old_price: string | null
+  old_price_per_kg: string | null
+  old_price_per_box: string | null
+  old_price_per_pack: string | null
+  old_price_per_unit: string | null
+  old_price_per_100g: string | null
   tag: '' | 'hit' | 'sale' | 'recommended'
   in_stock: boolean
   main_image?: string | null
