@@ -1,5 +1,6 @@
 from django.db import models
 from apps.users.models import User
+from utils.images import compress_image
 
 
 class ChatRoom(models.Model):
@@ -28,6 +29,13 @@ class Message(models.Model):
     class Meta:
         db_table = 'chat_messages'
         ordering = ['created_at']
+
+    def save(self, *args, **kwargs):
+        if self.image and hasattr(self.image, 'file'):
+            compressed = compress_image(self.image)
+            if compressed:
+                self.image = compressed
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'Message from {self.sender} in {self.room}'

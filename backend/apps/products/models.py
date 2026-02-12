@@ -1,4 +1,5 @@
 from django.db import models
+from utils.images import compress_image
 
 
 class Category(models.Model):
@@ -12,6 +13,13 @@ class Category(models.Model):
         db_table = 'categories'
         ordering = ['sort_order', 'name']
         verbose_name_plural = 'categories'
+
+    def save(self, *args, **kwargs):
+        if self.image and hasattr(self.image, 'file'):
+            compressed = compress_image(self.image)
+            if compressed:
+                self.image = compressed
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
@@ -125,6 +133,13 @@ class ProductImage(models.Model):
     class Meta:
         db_table = 'product_images'
         ordering = ['sort_order']
+
+    def save(self, *args, **kwargs):
+        if self.image and hasattr(self.image, 'file'):
+            compressed = compress_image(self.image)
+            if compressed:
+                self.image = compressed
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f'Image for {self.product.name}'
