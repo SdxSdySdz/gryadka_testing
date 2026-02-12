@@ -236,3 +236,23 @@ def admin_order_update(request, pk):
     order.save(update_fields=['status'])
 
     return Response(OrderSerializer(order).data)
+
+
+@api_view(['POST'])
+def admin_order_bulk(request):
+    """Admin: bulk update order statuses."""
+    if not request.tma_user.is_admin:
+        return Response({'error': 'Forbidden'}, status=403)
+
+    ids = request.data.get('ids', [])
+    new_status = request.data.get('status', '')
+
+    if not ids or not new_status:
+        return Response({'error': 'ids and status required'}, status=400)
+
+    valid_statuses = ['new', 'confirmed', 'preparing', 'delivering', 'completed', 'cancelled']
+    if new_status not in valid_statuses:
+        return Response({'error': f'Invalid status: {new_status}'}, status=400)
+
+    updated = Order.objects.filter(id__in=ids).update(status=new_status)
+    return Response({'updated': updated})

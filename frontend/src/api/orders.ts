@@ -27,4 +27,7 @@ export const ordersApi = {
 
   adminUpdateStatus: (id: number, status: string) =>
     http.patch<Order>(`/orders/admin/${id}/`, { status }).then((r) => r.data),
+
+  adminBulkStatus: (ids: number[], status: string) =>
+    http.post<{ updated: number }>('/orders/admin/bulk/', { ids, status }).then((r) => r.data),
 }

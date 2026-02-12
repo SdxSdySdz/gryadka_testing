@@ -17,10 +17,14 @@ export default function AdminOrders() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('')
   const [expandedId, setExpandedId] = useState<number | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
 
   useAppBackButton(useCallback(() => navigate('/profile'), [navigate]))
 
   useEffect(() => { loadOrders() }, [filter])
+
+  // Clear selection when filter changes
+  useEffect(() => { setSelectedIds(new Set()) }, [filter])
 
   const loadOrders = async () => {
     setLoading(true)
@@ -39,6 +43,33 @@ export default function AdminOrders() {
   }
 
   const toggle = (id: number) => setExpandedId(expandedId === id ? null : id)
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const allSelected = orders.length > 0 && selectedIds.size === orders.length
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(orders.map((o) => o.id)))
+    }
+  }
+
+  const handleBulkStatus = async (newStatus: string) => {
+    if (selectedIds.size === 0) return
+    try {
+      await ordersApi.adminBulkStatus(Array.from(selectedIds), newStatus)
+      setSelectedIds(new Set())
+      loadOrders()
+    } catch (e) { console.error(e) }
+  }
 
   return (
     <div style={{ padding: 16 }}>
@@ -75,6 +106,44 @@ export default function AdminOrders() {
         ))}
       </div>
 
+      {/* Select all + bulk actions */}
+      {orders.length > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          marginBottom: 12, flexWrap: 'wrap',
+        }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={toggleAll}
+              style={{ width: 18, height: 18, accentColor: 'var(--green-main)' }}
+            />
+            {selectedIds.size > 0 ? `Выбрано: ${selectedIds.size}` : 'Выбрать все'}
+          </label>
+
+          {selectedIds.size > 0 && (
+            <div style={{ display: 'flex', gap: 6, marginLeft: 'auto', flexWrap: 'wrap' }}>
+              {STATUS_OPTIONS.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => handleBulkStatus(s)}
+                  style={{
+                    padding: '5px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                    background: `${statusColors[s]}15`,
+                    color: statusColors[s],
+                    border: `1px solid ${statusColors[s]}40`,
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {STATUS_LABELS[s]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: 40 }}>Загрузка...</div>
       ) : orders.length === 0 ? (
@@ -83,6 +152,7 @@ export default function AdminOrders() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {orders.map((order) => {
             const expanded = expandedId === order.id
+            const selected = selectedIds.has(order.id)
             const deliveryPrice = parseFloat(order.delivery_price || '0')
             const urgency = parseFloat(order.urgency_surcharge || '0')
             const total = parseFloat(order.total)
@@ -94,39 +164,57 @@ export default function AdminOrders() {
                 style={{
                   background: 'var(--white)', borderRadius: 14,
                   padding: 14, boxShadow: 'var(--shadow)',
+                  border: selected ? '2px solid var(--green-main)' : '2px solid transparent',
                 }}
               >
                 {/* Header — clickable */}
                 <div
-                  onClick={() => toggle(order.id)}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', display: 'flex', gap: 10, alignItems: 'flex-start' }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontWeight: 600 }}>#{order.id}</span>
-                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{order.user_display_name}</span>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" strokeWidth="2"
-                        style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
-                        <polyline points="6 9 12 15 18 9"/>
-                      </svg>
-                    </div>
-                    <span style={{ fontWeight: 700, color: 'var(--green-main)' }}>
-                      {total.toFixed(0)} ₽
-                    </span>
-                  </div>
-
-                  {!expanded && (
-                    <>
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
-                        {order.items.map((item) => item.product_name).join(', ')}
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-hint)' }}>
-                          {new Date(order.created_at).toLocaleString('ru-RU')}
+                  {/* Checkbox */}
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    onChange={() => toggleSelect(order.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ width: 18, height: 18, accentColor: 'var(--green-main)', marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div style={{ flex: 1 }} onClick={() => toggle(order.id)}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <span style={{ fontWeight: 600 }}>#{order.id}</span>
+                        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{order.user_display_name}</span>
+                        <span style={{
+                          fontSize: 10, fontWeight: 600, padding: '2px 6px',
+                          borderRadius: 6,
+                          background: `${statusColors[order.status]}15`,
+                          color: statusColors[order.status],
+                        }}>
+                          {STATUS_LABELS[order.status]}
                         </span>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-hint)" strokeWidth="2"
+                          style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                          <polyline points="6 9 12 15 18 9"/>
+                        </svg>
                       </div>
-                    </>
-                  )}
+                      <span style={{ fontWeight: 700, color: 'var(--green-main)' }}>
+                        {total.toFixed(0)} ₽
+                      </span>
+                    </div>
+
+                    {!expanded && (
+                      <>
+                        <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6 }}>
+                          {order.items.map((item) => item.product_name).join(', ')}
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: 11, color: 'var(--text-hint)' }}>
+                            {new Date(order.created_at).toLocaleString('ru-RU')}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 {expanded && (
